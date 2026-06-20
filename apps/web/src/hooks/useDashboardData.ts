@@ -66,6 +66,9 @@ export function useDashboardData(): void {
       onMessage: applyAircraftEnvelope,
       onStatus(status) {
         setAircraftConnectionStatus(status);
+        if (status === "open") {
+          setAircraftError(null);
+        }
       },
       onError(error) {
         setAircraftError(error.message);

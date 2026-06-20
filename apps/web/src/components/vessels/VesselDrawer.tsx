@@ -20,6 +20,7 @@ import type { DashboardPanel } from "../layout/DashboardShell";
 import { TrafficTrackingControls } from "../map/TrafficTrackingControls";
 import { MilitaryIntelPanel } from "../military/MilitaryIntelPanel";
 import { RoutePanel } from "../routes/RoutePanel";
+import { SettingsPanel } from "../settings/SettingsPanel";
 import { VesselBadges } from "./VesselBadges";
 import { VesselIntelPanel } from "./VesselIntelPanel";
 import {
@@ -31,6 +32,7 @@ import { useAnalysisStore } from "../../stores/analysisStore";
 import { useAircraftIntelStore } from "../../stores/aircraftIntelStore";
 import { useMapStore } from "../../stores/mapStore";
 import { useVesselIntelStore } from "../../stores/vesselIntelStore";
+import { useVisibleTraffic } from "../../hooks/useVisibleTraffic";
 import {
   selectSelectedVessel,
   selectVesselList,
@@ -50,6 +52,7 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
   const vessels = useVesselStore(useShallow(selectVesselList));
   const selectedAircraft = useAircraftStore(selectSelectedAircraft);
   const aircraft = useAircraftStore(useShallow(selectAircraftList));
+  const { visibleAircraft, visibleVessels } = useVisibleTraffic();
   const selectAircraft = useAircraftStore((state) => state.selectAircraft);
   const selectVessel = useVesselStore((state) => state.selectVessel);
   const clearAreaFocus = useMapStore((state) => state.clearAreaFocus);
@@ -133,8 +136,8 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
   if (activePanel === "alerts") {
     return (
       <AlertsPanel
-        aircraft={aircraft}
-        vessels={vessels}
+        aircraft={visibleAircraft}
+        vessels={visibleVessels}
         onInspectAircraft={inspectAircraftById}
         onInspectVessel={inspectVessel}
       />
@@ -150,6 +153,10 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
         vessels={vessels}
       />
     );
+  }
+
+  if (activePanel === "settings") {
+    return <SettingsPanel />;
   }
 
   return (
@@ -227,7 +234,7 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
             />
             {domainFilter === "aircraft" ? (
               <AircraftList
-                aircraft={aircraft}
+                aircraft={visibleAircraft}
                 selectedAircraftId={selectedAircraftId ?? null}
                 onInspectAircraft={inspectAircraft}
               />

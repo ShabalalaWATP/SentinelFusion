@@ -5,6 +5,11 @@ import {
   type TrafficAreaBounds,
   type Vessel
 } from "@aisstream/shared";
+import {
+  filterByFeedConfidence,
+  type FeedConfidenceSettings,
+  type FeedHealthSnapshot
+} from "./feedConfidence";
 
 export type TrafficDomain = "all" | "vessels" | "aircraft";
 export type TrafficEntityDomain = "vessel" | "aircraft";
@@ -37,7 +42,10 @@ export type VisibleTrafficOptions = {
   aircraftFilters: AircraftFilterSettings;
   areaOnlyBounds?: TrafficAreaBounds | null;
   domainFilter: TrafficDomain;
+  feedConfidenceSettings?: FeedConfidenceSettings;
+  feedHealth?: FeedHealthSnapshot;
   selectedAircraftId?: string | null;
+  selectedVesselId?: string | null;
 };
 
 export type VisibleTraffic = {
@@ -132,10 +140,18 @@ export function selectVisibleTraffic(
   const visibleAircraft = shouldIncludeDomain("aircraft", options)
     ? selectVisibleAircraft(aircraft, options, areaOnlyBounds)
     : [];
+  const confidenceFiltered = options.feedConfidenceSettings
+    ? filterByFeedConfidence(visibleVessels, visibleAircraft, {
+        settings: options.feedConfidenceSettings,
+        ...(options.feedHealth ? { feedHealth: options.feedHealth } : {}),
+        ...(options.selectedAircraftId ? { selectedAircraftId: options.selectedAircraftId } : {}),
+        ...(options.selectedVesselId ? { selectedVesselId: options.selectedVesselId } : {})
+      })
+    : { aircraft: visibleAircraft, vessels: visibleVessels };
 
   return {
-    aircraft: visibleAircraft,
-    vessels: visibleVessels
+    aircraft: confidenceFiltered.aircraft,
+    vessels: confidenceFiltered.vessels
   };
 }
 

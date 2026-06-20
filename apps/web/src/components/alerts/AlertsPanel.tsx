@@ -1,13 +1,24 @@
 import { Bell, Check, Eye, RotateCcw, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Aircraft, Vessel } from "@aisstream/shared";
 import { buildAlertItems, type AlertItem, type AlertStatus } from "../../alerts/alertModels";
 import { detectAnomalies } from "../../alerts/anomalyDetection";
 import { selectAircraftFilters, useAircraftFilterStore } from "../../stores/aircraftFilterStore";
-import { useAlertStore } from "../../stores/alertStore";
+import {
+  selectAlertPresets,
+  selectEnabledAlertPresetCount,
+  selectProviderIncidents,
+  useAlertStore
+} from "../../stores/alertStore";
 import { useAnomalyStore } from "../../stores/anomalyStore";
+import { selectFeedConfidenceSettings, useFeedFilterStore } from "../../stores/feedFilterStore";
 import { useTrafficRuleStore } from "../../stores/trafficRuleStore";
+import { useAircraftStore } from "../../stores/aircraftStore";
+import { useVesselStore } from "../../stores/vesselStore";
+import { describeFeedHealth, type FeedStreamStatus } from "../../traffic/feedConfidence";
+import { useNowTick } from "../../hooks/useNowTick";
 import { filterAircraftBySettings } from "../../traffic/trafficFilters";
+import { AlertPresetControls } from "./AlertPresetControls";
 
 type AlertsPanelProps = {
   aircraft: Aircraft[];
@@ -28,9 +39,23 @@ export function AlertsPanel({
   const acknowledged = useAlertStore((state) => state.acknowledged);
   const aircraftFilters = useAircraftFilterStore(selectAircraftFilters);
   const dismissed = useAlertStore((state) => state.dismissed);
+  const presets = useAlertStore(selectAlertPresets);
+  const enabledPresetCount = useAlertStore(selectEnabledAlertPresetCount);
+  const providerIncidents = useAlertStore(selectProviderIncidents);
   const acknowledge = useAlertStore((state) => state.acknowledge);
   const dismiss = useAlertStore((state) => state.dismiss);
   const restore = useAlertStore((state) => state.restore);
+  const togglePreset = useAlertStore((state) => state.togglePreset);
+  const resetPresets = useAlertStore((state) => state.resetPresets);
+  const updateProviderIncident = useAlertStore((state) => state.updateProviderIncident);
+  const feedSettings = useFeedFilterStore(selectFeedConfidenceSettings);
+  const vesselStreamStatus = useVesselStore((state) => state.streamStatus);
+  const vesselConnectionStatus = useVesselStore((state) => state.connectionStatus);
+  const vesselLastError = useVesselStore((state) => state.lastError);
+  const aircraftStreamStatus = useAircraftStore((state) => state.streamStatus);
+  const aircraftConnectionStatus = useAircraftStore((state) => state.connectionStatus);
+  const aircraftLastError = useAircraftStore((state) => state.lastError);
+  const nowMs = useNowTick(presets.providerHealth || presets.staleContacts);
   const areaMonitors = useAnomalyStore((state) => state.areaMonitors);
   const entityMonitors = useAnomalyStore((state) => state.entityMonitors);
   const events = useTrafficRuleStore((state) => state.events);
@@ -42,9 +67,97 @@ export function AlertsPanel({
     () => detectAnomalies({ aircraft: filteredAircraft, areaMonitors, entityMonitors, vessels }),
     [areaMonitors, entityMonitors, filteredAircraft, vessels]
   );
+  const aircraftHealth = useMemo(
+    () =>
+      describeHealth(
+        aircraftStreamStatus,
+        aircraftConnectionStatus,
+        aircraftLastError,
+        feedSettings.maxContactAgeMinutes,
+        nowMs
+      ),
+    [
+      aircraftConnectionStatus,
+      aircraftLastError,
+      aircraftStreamStatus,
+      feedSettings.maxContactAgeMinutes,
+      nowMs
+    ]
+  );
+  const vesselHealth = useMemo(
+    () =>
+      describeHealth(
+        vesselStreamStatus,
+        vesselConnectionStatus,
+        vesselLastError,
+        feedSettings.maxContactAgeMinutes,
+        nowMs
+      ),
+    [
+      feedSettings.maxContactAgeMinutes,
+      nowMs,
+      vesselConnectionStatus,
+      vesselLastError,
+      vesselStreamStatus
+    ]
+  );
+  const generatedAt = useMemo(() => new Date(nowMs).toISOString(), [nowMs]);
+
+  useEffect(() => {
+    updateProviderIncident("aircraft", aircraftHealth.healthy, generatedAt);
+    updateProviderIncident("vessel", vesselHealth.healthy, generatedAt);
+  }, [aircraftHealth.healthy, generatedAt, updateProviderIncident, vesselHealth.healthy]);
+
   const alerts = useMemo(
-    () => buildAlertItems({ acknowledged, aircraft: filteredAircraft, anomalies, dismissed, events, vessels }),
-    [acknowledged, anomalies, dismissed, events, filteredAircraft, vessels]
+    () =>
+      buildAlertItems({
+        acknowledged,
+        aircraft: filteredAircraft,
+        anomalies,
+        dismissed,
+        events,
+        feedHealth: {
+          aircraftHealthIncidentStartedAt: providerIncidents.aircraft.epoch,
+          aircraftHealthReason: aircraftHealth.reason,
+          aircraftHealthy: aircraftHealth.healthy,
+          aircraftLastError,
+          generatedAt,
+          maxContactAgeMinutes: feedSettings.maxContactAgeMinutes,
+          vesselHealthIncidentStartedAt: providerIncidents.vessel.epoch,
+          vesselHealthReason: vesselHealth.reason,
+          vesselLastError,
+          vesselsHealthy: vesselHealth.healthy,
+          ...(aircraftStreamStatus?.lastMessageAt
+            ? { aircraftLastMessageAt: aircraftStreamStatus.lastMessageAt }
+            : {}),
+          ...(vesselStreamStatus?.lastMessageAt
+            ? { vesselLastMessageAt: vesselStreamStatus.lastMessageAt }
+            : {})
+        },
+        presets,
+        vessels
+      }),
+    [
+      acknowledged,
+      aircraftHealth.healthy,
+      aircraftHealth.reason,
+      aircraftLastError,
+      aircraftStreamStatus,
+      anomalies,
+      dismissed,
+      events,
+      feedSettings.maxContactAgeMinutes,
+      filteredAircraft,
+      generatedAt,
+      presets,
+      providerIncidents.aircraft.epoch,
+      providerIncidents.vessel.epoch,
+      vesselHealth.healthy,
+      vesselHealth.reason,
+      vesselLastError,
+      vesselStreamStatus,
+      vessels
+    ]
   );
   const visibleAlerts = alerts.filter((alert) => view === "all" || alert.status === view);
   const activeCount = alerts.filter((alert) => alert.status === "active").length;
@@ -96,6 +209,13 @@ export function AlertsPanel({
           ))}
         </div>
 
+        <AlertPresetControls
+          enabledCount={enabledPresetCount}
+          presets={presets}
+          onReset={resetPresets}
+          onToggle={togglePreset}
+        />
+
         <div className="mt-3 space-y-2">
           {visibleAlerts.length > 0 ? (
             visibleAlerts.slice(0, 40).map((alert) => (
@@ -117,6 +237,22 @@ export function AlertsPanel({
       </div>
     </aside>
   );
+}
+
+function describeHealth(
+  streamStatus: FeedStreamStatus | null | undefined,
+  connectionStatus: string,
+  lastError: string | null,
+  maxMessageAgeMinutes: number,
+  nowMs: number
+): ReturnType<typeof describeFeedHealth> {
+  return describeFeedHealth({
+    connectionStatus,
+    lastError,
+    maxMessageAgeMinutes,
+    nowMs,
+    streamStatus
+  });
 }
 
 function AlertCard({

@@ -18,12 +18,15 @@ Implemented:
 - Aircraft-aware drawn and named-area analysis with aircraft counts, military/emergency aircraft counts, and matching aircraft listed below the result.
 - Aircraft operations filters for search, military/government/commercial presets, emergency, airborne, altitude and speed ranges, shared across map rendering, aircraft list, route panel, alerts, and military intel.
 - Combined sea/air military intel panel with aircraft focus and aircraft web-intel actions.
+- Feed confidence filters for stale contacts and unhealthy providers, including selected-contact preservation and persisted settings.
+- Alert presets for high-risk vessels, classified vessels, emergency aircraft, classified aircraft, watched areas, anomalies, provider health and stale contacts.
+- Settings panel for sea and air provider status, feed confidence controls, last message age, latency, errors and reconnect counts without exposing credentials.
 - Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
 
 Still planned:
 
 - Optional filed-route enrichment where licensed provider data supports it.
-- Source/stale-data filters and alert presets for flight provider confidence and feed freshness.
+- Server-side provider aggregation for future OSINT providers and persisted domain defaults.
 
 ## Provider Decision
 
@@ -275,6 +278,8 @@ Deliverables:
 - Military/government/emergency presets. Implemented for aircraft, with commercial and airborne presets.
 - Altitude and speed range inputs. Implemented for aircraft.
 - Alert list includes emergency squawks, military aircraft, rapid descent, stale data and proximity to drawn area.
+- Alert preset controls are persisted locally and can suppress noisy alert classes without removing the underlying detection code.
+- Stale-contact and provider-health alert classes are available from the feed confidence foundation.
 
 Acceptance:
 
@@ -306,7 +311,8 @@ Deliverables:
 - Combined metrics bar.
 - Routes panel supports vessel and aircraft observed tracks. Implemented with observed AIS/flight wording, shared map/panel filtering, selected-track emphasis, route caps with selected-entity preservation, and start/latest map markers.
 - Military intel panel supports sea and air. Implemented.
-- Settings panel for data-provider status and domain defaults.
+- Settings panel for data-provider status and feed confidence controls. Implemented for sea and air feeds.
+- Domain defaults.
 - Mobile layout preserves controls without covering the map.
 
 Acceptance:
@@ -373,4 +379,4 @@ The flight-tracking expansion is complete only when:
 
 ## Current Next Step
 
-Implement the remaining Stage 4.5 and Stage 4.7 polish next: source/stale-data filters, richer alert presets, settings panel for provider status and domain defaults, and mobile layout checks. Aircraft operations filters, combined sea/air military intel, and observed-track clarity are now implemented.
+Implement the next OSINT provider slice: server-owned provider status/cache contracts, marine weather context, and not-configured provider states for the higher-liability feeds. Domain defaults and mobile layout checks remain as Stage 4.7 polish.

@@ -53,7 +53,13 @@ export function LeftRail({ activePanel, onPanelChange }: LeftRailProps) {
         </IconButton>
       </nav>
 
-      <IconButton label="Settings" className="ml-auto md:ml-0">
+      <IconButton
+        label="Settings"
+        active={activePanel === "settings"}
+        aria-pressed={activePanel === "settings"}
+        className="ml-auto md:ml-0"
+        onClick={() => onPanelChange("settings")}
+      >
         <Settings size={18} strokeWidth={1.8} aria-hidden="true" />
       </IconButton>
     </aside>

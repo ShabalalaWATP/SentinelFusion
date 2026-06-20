@@ -4,7 +4,7 @@ import { TopMetricsBar } from "../metrics/TopMetricsBar";
 import { VesselDrawer } from "../vessels/VesselDrawer";
 import { LeftRail } from "./LeftRail";
 
-export type DashboardPanel = "overview" | "routes" | "alerts" | "military";
+export type DashboardPanel = "overview" | "routes" | "alerts" | "military" | "settings";
 
 export function DashboardShell() {
   const [activePanel, setActivePanel] = useState<DashboardPanel>("overview");

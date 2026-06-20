@@ -145,4 +145,34 @@ describe("trafficFilters", () => {
       }).vessels
     ).toEqual([]);
   });
+
+  it("applies feed confidence filters after domain and area filters", () => {
+    const staleVessel = {
+      ...vessel,
+      id: "mmsi-987654321",
+      mmsi: "987654321",
+      lastUpdated: "2026-06-11T09:00:00.000Z"
+    };
+
+    const visible = selectVisibleTraffic([vessel, staleVessel], [commercialAircraftInsideArea], {
+      activeAreaOnlyRule: null,
+      aircraftFilters: defaultAircraftFilterSettings,
+      areaOnlyBounds: bounds,
+      domainFilter: "all",
+      feedConfidenceSettings: {
+        hideStaleContacts: true,
+        hideUnhealthyFeeds: false,
+        maxContactAgeMinutes: 10
+      },
+      feedHealth: {
+        aircraftHealthy: true,
+        nowMs: Date.parse("2026-06-11T10:00:00.000Z"),
+        vesselsHealthy: true
+      },
+      selectedVesselId: staleVessel.id
+    });
+
+    expect(visible.vessels).toEqual([vessel, staleVessel]);
+    expect(visible.aircraft).toEqual([commercialAircraftInsideArea]);
+  });
 });

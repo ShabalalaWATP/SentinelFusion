@@ -4,6 +4,7 @@ import type { Aircraft, Vessel, VesselMetrics } from "@aisstream/shared";
 import { questionForAnalysisMode } from "../analysis/analysisDefaults";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useAircraftIntelStore } from "../../stores/aircraftIntelStore";
+import { useFeedFilterStore } from "../../stores/feedFilterStore";
 import { useAircraftStore } from "../../stores/aircraftStore";
 import { useMapStore } from "../../stores/mapStore";
 import { useVesselIntelStore } from "../../stores/vesselIntelStore";
@@ -86,6 +87,7 @@ function resetStores(): void {
     trackedTarget: null
   });
   useAnalysisStore.getState().reset();
+  useFeedFilterStore.getState().resetSettings();
   useAircraftIntelStore.setState({ errors: {}, results: {}, statuses: {} });
   useVesselIntelStore.setState({ errors: {}, results: {}, statuses: {} });
 }
@@ -185,5 +187,54 @@ describe("VesselDrawer", () => {
     });
     expect(useMapStore.getState().domainFilter).toBe("aircraft");
     expect(onPanelChange).toHaveBeenCalledWith("routes");
+  });
+
+  it("uses feed confidence filters for the aircraft list", async () => {
+    const freshAircraft: Aircraft = {
+      ...aircraft,
+      id: "icao24-40621b",
+      icao24: "40621b",
+      callsign: "BAW12",
+      lastUpdated: new Date().toISOString()
+    };
+    const staleAircraft: Aircraft = {
+      ...aircraft,
+      id: "icao24-4d2222",
+      icao24: "4d2222",
+      callsign: "STALE1",
+      lastUpdated: "2000-01-01T00:00:00.000Z"
+    };
+    useMapStore.setState({ domainFilter: "aircraft" });
+    useFeedFilterStore.getState().setSetting("hideStaleContacts", true);
+    useAircraftStore.setState({
+      aircraft: {
+        [freshAircraft.id]: freshAircraft,
+        [staleAircraft.id]: staleAircraft
+      },
+      connectionStatus: "open",
+      lastError: null,
+      metrics: null,
+      selectedAircraftId: null,
+      streamStatus: {
+        aircraftDropped: 0,
+        aircraftNormalised: 2,
+        aircraftReceived: 2,
+        connected: true,
+        errors: 0,
+        lastMessageAt: freshAircraft.lastUpdated,
+        mode: "live",
+        provider: "opensky",
+        reconnectAttempts: 0,
+        state: "subscribed",
+        subscription: {
+          boundingBoxes: [[[-90, -180], [90, 180]]]
+        }
+      }
+    });
+
+    render(<VesselDrawer activePanel="overview" onPanelChange={vi.fn()} />);
+
+    expect(await screen.findByText("BAW12")).toBeTruthy();
+    expect(screen.queryByText("STALE1")).toBeNull();
   });
 });

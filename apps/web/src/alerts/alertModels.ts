@@ -8,6 +8,9 @@ import {
   type Vessel
 } from "@aisstream/shared";
 import type { TrafficRuleEvent } from "../stores/trafficRuleStore";
+import { isContactStale } from "../traffic/feedConfidence";
+import type { AlertPresetSettings } from "./alertPresets";
+import { defaultAlertPresetSettings } from "./alertPresets";
 import type { DetectedAnomaly } from "./anomalyDetection";
 
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
@@ -27,12 +30,29 @@ export type AlertItem = {
   occurredAt: string;
 };
 
+export type AlertFeedHealth = {
+  aircraftHealthIncidentStartedAt?: string;
+  aircraftHealthReason?: string;
+  aircraftHealthy: boolean;
+  aircraftLastError?: string | null;
+  aircraftLastMessageAt?: string;
+  generatedAt: string;
+  maxContactAgeMinutes: number;
+  vesselHealthIncidentStartedAt?: string;
+  vesselHealthReason?: string;
+  vesselLastMessageAt?: string;
+  vesselsHealthy: boolean;
+  vesselLastError?: string | null;
+};
+
 export function buildAlertItems({
   acknowledged,
   aircraft,
   anomalies,
   dismissed,
   events,
+  feedHealth,
+  presets = defaultAlertPresetSettings,
   vessels
 }: {
   acknowledged: Record<string, string>;
@@ -40,13 +60,23 @@ export function buildAlertItems({
   anomalies: DetectedAnomaly[];
   dismissed: Record<string, string>;
   events: TrafficRuleEvent[];
+  feedHealth?: AlertFeedHealth;
+  presets?: AlertPresetSettings;
   vessels: Vessel[];
 }): AlertItem[] {
   const alerts = [
-    ...vessels.flatMap(vesselAlerts),
-    ...aircraft.flatMap(aircraftAlerts),
-    ...events.slice(0, 25).map(eventAlert),
-    ...anomalies.map(anomalyAlert)
+    ...(presets.highRiskVessels || presets.classifiedVessels
+      ? vessels.flatMap((vessel) => vesselAlerts(vessel, presets))
+      : []),
+    ...(presets.aircraftEmergencies || presets.classifiedAircraft
+      ? aircraft.flatMap((item) => aircraftAlerts(item, presets))
+      : []),
+    ...(presets.watchRules ? events.slice(0, 25).map(eventAlert) : []),
+    ...(presets.anomalies ? anomalies.map(anomalyAlert) : []),
+    ...(presets.providerHealth && feedHealth ? providerHealthAlerts(feedHealth) : []),
+    ...(presets.staleContacts && feedHealth
+      ? staleContactAlerts(vessels, aircraft, feedHealth)
+      : [])
   ];
 
   return uniqueAlerts(alerts)
@@ -57,10 +87,10 @@ export function buildAlertItems({
     .sort((left, right) => severityRank(right.severity) - severityRank(left.severity));
 }
 
-function vesselAlerts(vessel: Vessel): AlertItem[] {
+function vesselAlerts(vessel: Vessel, presets: AlertPresetSettings): AlertItem[] {
   const alerts: AlertItem[] = [];
 
-  if (vessel.riskLevel === "high") {
+  if (presets.highRiskVessels && vessel.riskLevel === "high") {
     alerts.push({
       id: `vessel-${vessel.id}-high-risk`,
       severity: "high",
@@ -75,7 +105,7 @@ function vesselAlerts(vessel: Vessel): AlertItem[] {
     });
   }
 
-  if (isClassifiedVessel(vessel)) {
+  if (presets.classifiedVessels && isClassifiedVessel(vessel)) {
     alerts.push({
       id: `vessel-${vessel.id}-classified`,
       severity: isMilitaryVessel(vessel) ? "high" : "medium",
@@ -93,11 +123,11 @@ function vesselAlerts(vessel: Vessel): AlertItem[] {
   return alerts;
 }
 
-function aircraftAlerts(aircraft: Aircraft): AlertItem[] {
+function aircraftAlerts(aircraft: Aircraft, presets: AlertPresetSettings): AlertItem[] {
   const label = aircraft.callsign ?? aircraft.registration ?? aircraft.icao24.toUpperCase();
   const alerts: AlertItem[] = [];
 
-  if (aircraft.emergency) {
+  if (presets.aircraftEmergencies && aircraft.emergency) {
     alerts.push({
       id: `aircraft-${aircraft.id}-emergency`,
       severity: "critical",
@@ -114,7 +144,11 @@ function aircraftAlerts(aircraft: Aircraft): AlertItem[] {
 
   const identity = toAircraftIdentity(aircraft);
 
-  if (isClassifiedAircraft(identity) && (isMilitaryAircraft(identity) || aircraft.riskLevel === "high")) {
+  if (
+    presets.classifiedAircraft &&
+    isClassifiedAircraft(identity) &&
+    (isMilitaryAircraft(identity) || aircraft.riskLevel === "high")
+  ) {
     alerts.push({
       id: `aircraft-${aircraft.id}-classified`,
       severity: isMilitaryAircraft(identity) ? "high" : "medium",
@@ -130,6 +164,129 @@ function aircraftAlerts(aircraft: Aircraft): AlertItem[] {
   }
 
   return alerts;
+}
+
+function providerHealthAlerts(feedHealth: AlertFeedHealth): AlertItem[] {
+  return [
+    feedHealth.vesselsHealthy
+      ? null
+      : providerAlert({
+          domain: "vessel",
+          error: feedHealth.vesselLastError,
+          feedHealth,
+          incidentStartedAt: feedHealth.vesselHealthIncidentStartedAt,
+          lastMessageAt: feedHealth.vesselLastMessageAt,
+          reason: feedHealth.vesselHealthReason,
+          title: "Sea feed degraded"
+        }),
+    feedHealth.aircraftHealthy
+      ? null
+      : providerAlert({
+          domain: "aircraft",
+          error: feedHealth.aircraftLastError,
+          feedHealth,
+          incidentStartedAt: feedHealth.aircraftHealthIncidentStartedAt,
+          lastMessageAt: feedHealth.aircraftLastMessageAt,
+          reason: feedHealth.aircraftHealthReason,
+          title: "Air feed degraded"
+        })
+  ].filter((alert): alert is AlertItem => alert !== null);
+}
+
+function providerAlert({
+  domain,
+  error,
+  feedHealth,
+  incidentStartedAt,
+  lastMessageAt,
+  reason,
+  title
+}: {
+  domain: "vessel" | "aircraft";
+  error: string | null | undefined;
+  feedHealth: AlertFeedHealth;
+  incidentStartedAt: string | undefined;
+  lastMessageAt: string | undefined;
+  reason: string | undefined;
+  title: string;
+}): AlertItem {
+  const detail = error ?? reason ?? title;
+
+  return {
+    id: `provider-${domain}-health-${incidentHash([
+      domain,
+      detail,
+      incidentStartedAt ?? "unknown-incident",
+      lastMessageAt ?? "no-last-message"
+    ])}`,
+    severity: "high",
+    status: "active",
+    source: "Provider status",
+    title,
+    description: `${title}: ${detail}`,
+    entityDomain: "area",
+    occurredAt: feedHealth.generatedAt
+  };
+}
+
+function staleContactAlerts(
+  vessels: Vessel[],
+  aircraft: Aircraft[],
+  feedHealth: AlertFeedHealth
+): AlertItem[] {
+  const nowMs = Date.parse(feedHealth.generatedAt);
+  const staleVessels = vessels.filter((vessel) =>
+    isContactStale(vessel, feedHealth.maxContactAgeMinutes, nowMs)
+  );
+  const staleAircraft = aircraft.filter((item) =>
+    isContactStale(item, feedHealth.maxContactAgeMinutes, nowMs)
+  );
+
+  return [
+    staleVessels.length > 0 ? staleSummary("vessel", staleVessels, feedHealth) : null,
+    staleAircraft.length > 0 ? staleSummary("aircraft", staleAircraft, feedHealth) : null
+  ].filter((alert): alert is AlertItem => alert !== null);
+}
+
+function staleSummary(
+  domain: "vessel" | "aircraft",
+  contacts: Array<{ lastUpdated: string }>,
+  feedHealth: AlertFeedHealth
+): AlertItem {
+  const label = domain === "vessel" ? "vessels" : "aircraft";
+  const latestStaleUpdate = latestTimestamp(contacts);
+
+  return {
+    id: `provider-${domain}-stale-contacts-${incidentHash([
+      domain,
+      String(contacts.length),
+      latestStaleUpdate,
+      String(feedHealth.maxContactAgeMinutes)
+    ])}`,
+    severity: "medium",
+    status: "active",
+    source: "Feed confidence",
+    title: `Stale ${label}`,
+    description: `${contacts.length} ${label} have not updated within ${feedHealth.maxContactAgeMinutes} minutes.`,
+    entityDomain: "area",
+    occurredAt: feedHealth.generatedAt
+  };
+}
+
+function latestTimestamp(contacts: Array<{ lastUpdated: string }>): string {
+  const timestamps = contacts.map((contact) => contact.lastUpdated).sort();
+  return timestamps[timestamps.length - 1] ?? "unknown";
+}
+
+function incidentHash(parts: string[]): string {
+  const input = parts.join("|");
+  let hash = 0;
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 31 + input.charCodeAt(index)) >>> 0;
+  }
+
+  return hash.toString(36);
 }
 
 function toAircraftIdentity(aircraft: Aircraft): AircraftIdentity {
