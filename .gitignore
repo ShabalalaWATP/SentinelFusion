@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.turbo/
+.playwright-cli/
+*.log
+.env
+.env.*
+!.env.example
+apps/**/.env
+apps/**/.env.*
+!apps/**/.env.example
+pnpm-debug.log*
+Dockerfile.local
+instructions.md

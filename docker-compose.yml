@@ -1,0 +1,51 @@
+x-node-image: &node_image node:22-alpine@sha256:9385cd9f3001dfc3431e8ead12c43e9e1f87cc1b9b5c6cfd0f73865d405b27c4
+
+services:
+  api:
+    image: *node_image
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @aisstream/api dev"
+    ports:
+      - "127.0.0.1:4000:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      HOST: 0.0.0.0
+      TRUST_PROXY: false
+      CORS_ORIGINS: http://localhost:5173
+      AIS_MODE: live
+      ANALYSIS_MODE: live
+      AISSTREAM_URL: wss://stream.aisstream.io/v0/stream
+      AISSTREAM_BBOXES: '[[[-90,-180],[90,180]]]'
+      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY:?AISSTREAM_API_KEY is required for live AISstream}
+      FLIGHT_MODE: ${FLIGHT_MODE:-mock}
+      FLIGHT_PROVIDER: ${FLIGHT_PROVIDER:-mock}
+      FLIGHT_API_BASE_URL: ${FLIGHT_API_BASE_URL:-}
+      FLIGHT_API_KEY: ${FLIGHT_API_KEY:-}
+      FLIGHT_BBOXES: '${FLIGHT_BBOXES:-[[[-90,-180],[90,180]]]}'
+      OPEN_SKY_CLIENT_ID: ${OPEN_SKY_CLIENT_ID:-}
+      OPEN_SKY_CLIENT_SECRET: ${OPEN_SKY_CLIENT_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required for live analysis}
+      ALLOW_UNAUTHENTICATED_ANALYSIS: true
+    volumes:
+      - .:/workspace
+      - pnpm-store:/root/.local/share/pnpm/store
+
+  web:
+    image: *node_image
+    working_dir: /workspace
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @aisstream/web dev -- --host 0.0.0.0"
+    ports:
+      - "127.0.0.1:5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:4000
+      VITE_WS_URL: ws://localhost:4000/ws/vessels
+      VITE_FLIGHT_WS_URL: ws://localhost:4000/ws/aircraft
+    depends_on:
+      - api
+    volumes:
+      - .:/workspace
+      - pnpm-store:/root/.local/share/pnpm/store
+
+volumes:
+  pnpm-store:

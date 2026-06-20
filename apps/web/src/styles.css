@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #071015;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: #071015;
+  color: #f8fafc;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+@layer components {
+  .alert-action-button {
+    @apply inline-flex h-8 items-center gap-2 rounded-md border border-slate-500/[0.18] px-2 text-xs text-slate-300 transition hover:border-cyan-300/[0.35] hover:text-cyan-100;
+  }
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 0.22) !important;
+  background: rgb(10 21 28 / 0.92) !important;
+}
+
+.maplibregl-ctrl button {
+  background-color: transparent !important;
+}
+
+.maplibregl-ctrl button span {
+  filter: invert(1);
+}
+
+.maplibregl-popup-content {
+  border: 1px solid rgb(50 211 238 / 0.32);
+  background: rgb(10 21 28 / 0.95);
+  color: #f8fafc;
+}
