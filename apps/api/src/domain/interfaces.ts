@@ -9,6 +9,8 @@ import type {
   AnalysisRequest,
   AnalysisSummary,
   AnalysisVesselIntelContext,
+  MarineWeatherResponse,
+  TrafficAreaBounds,
   Vessel,
   VesselIntelResponse,
   VesselMetrics,
@@ -184,4 +186,8 @@ export interface IVesselIntelService {
 
 export interface IAircraftIntelService {
   enrich(aircraft: Aircraft): Promise<AircraftIntelResponse>;
+}
+
+export interface IMarineWeatherService {
+  getAreaWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
 }

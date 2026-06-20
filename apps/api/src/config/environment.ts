@@ -54,6 +54,10 @@ const rawConfigSchema = z.object({
   FLIGHT_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
   OPEN_SKY_CLIENT_ID: optionalNonEmptyString,
   OPEN_SKY_CLIENT_SECRET: optionalNonEmptyString,
+  MARINE_WEATHER_MODE: z.enum(["off", "mock", "live"]).default("live"),
+  MARINE_WEATHER_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  MARINE_WEATHER_CACHE_SECONDS: z.coerce.number().int().min(0).default(900),
+  MARINE_WEATHER_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).default(200),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -95,6 +99,10 @@ export type AppConfig = {
   flightProviderTimeoutMs: number;
   openSkyClientId?: string;
   openSkyClientSecret?: string;
+  marineWeatherMode: "off" | "mock" | "live";
+  marineWeatherTimeoutMs: number;
+  marineWeatherCacheSeconds: number;
+  marineWeatherCacheMaxEntries: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -173,6 +181,10 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     flightPollIntervalMs: parsed.FLIGHT_POLL_INTERVAL_MS,
     flightStaleAfterSeconds: parsed.FLIGHT_STALE_AFTER_SECONDS,
     flightProviderTimeoutMs: parsed.FLIGHT_PROVIDER_TIMEOUT_MS,
+    marineWeatherMode: parsed.MARINE_WEATHER_MODE,
+    marineWeatherTimeoutMs: parsed.MARINE_WEATHER_TIMEOUT_MS,
+    marineWeatherCacheSeconds: parsed.MARINE_WEATHER_CACHE_SECONDS,
+    marineWeatherCacheMaxEntries: parsed.MARINE_WEATHER_CACHE_MAX_ENTRIES,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,

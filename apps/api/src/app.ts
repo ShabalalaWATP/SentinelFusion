@@ -15,11 +15,13 @@ import { AircraftAnalyticsService } from "./analytics/aircraft-analytics-service
 import { VesselAnalyticsService } from "./analytics/vessel-analytics-service";
 import type { AppConfig } from "./config/environment";
 import { createLoggerOptions } from "./config/logger";
+import { MarineWeatherService } from "./context/marine-weather-service";
 import type {
   IAisStreamClient,
   IFlightTrackingClient,
   IAnalysisAgentService,
   IAircraftIntelService,
+  IMarineWeatherService,
   IVesselIntelService
 } from "./domain/interfaces";
 import { InMemoryAircraftRepository } from "./domain/aircraft-repository";
@@ -37,6 +39,7 @@ import { registerAircraftRoutes } from "./routes/aircraft";
 import { registerAnalysisRoute } from "./routes/analysis";
 import { registerFlightStatusRoute } from "./routes/flight-status";
 import { registerHealthRoute } from "./routes/health";
+import { registerMarineWeatherRoute } from "./routes/marine-weather";
 import { registerStreamStatusRoute } from "./routes/stream-status";
 import { registerVesselRoutes } from "./routes/vessels";
 import { registerAircraftStream } from "./ws/aircraft-stream";
@@ -45,6 +48,7 @@ import { registerVesselStream } from "./ws/vessel-stream";
 type CreateAppOptions = {
   analysisService?: IAnalysisAgentService;
   aircraftIntelService?: IAircraftIntelService;
+  marineWeatherService?: IMarineWeatherService;
   vesselIntelService?: IVesselIntelService;
   seedAircraft?: Aircraft[];
   seedVessels?: Vessel[];
@@ -76,6 +80,8 @@ export async function createApp(
   const analysisService = options.analysisService ?? createAnalysisService(config);
   const aircraftIntelService =
     options.aircraftIntelService ?? createAircraftIntelService(config);
+  const marineWeatherService =
+    options.marineWeatherService ?? createMarineWeatherService(config);
   const vesselIntelService = options.vesselIntelService ?? createVesselIntelService(config);
 
   options.seedAircraft?.forEach((aircraft) => aircraftRepository.upsert(aircraft));
@@ -98,6 +104,9 @@ export async function createApp(
   });
   await app.register(websocket);
   await registerHealthRoute(app, config);
+  await registerMarineWeatherRoute(app, {
+    service: marineWeatherService
+  });
   await registerAircraftRoutes(app, {
     repository: aircraftRepository,
     analytics: aircraftAnalytics,
@@ -258,6 +267,10 @@ function createAircraftIntelService(config: AppConfig): IAircraftIntelService {
   }
 
   return new MockAircraftIntelService();
+}
+
+function createMarineWeatherService(config: AppConfig): IMarineWeatherService {
+  return new MarineWeatherService(config);
 }
 
 function aircraftLabel(aircraft: Aircraft): string {

@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AnalysisSummary } from "@aisstream/shared";
 import { useMapStore } from "../../stores/mapStore";
+import { useMarineWeatherStore } from "../../stores/marineWeatherStore";
 import { AnalysisResult } from "./AnalysisResult";
 
 const result: AnalysisSummary = {
@@ -77,6 +78,12 @@ const result: AnalysisSummary = {
 describe("AnalysisResult", () => {
   beforeEach(() => {
     useMapStore.setState({ areaFocusRequest: null });
+    useMarineWeatherStore.setState({
+      status: "idle",
+      result: null,
+      error: null,
+      refresh: async () => undefined
+    });
   });
 
   it("renders area analysis as a readable vessel list and focuses the map area", () => {

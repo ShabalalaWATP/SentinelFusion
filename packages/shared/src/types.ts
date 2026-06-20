@@ -15,6 +15,7 @@ import type {
   flightProviderSchema,
   flightStreamStatusSchema
 } from "./aircraft-schemas";
+import type { marineWeatherResponseSchema } from "./context-schemas";
 import type {
   aisRawMessageSchema,
   analysisAreaResultSchema,
@@ -76,3 +77,4 @@ export type VesselIntelSource = z.infer<typeof vesselIntelSourceSchema>;
 export type VesselIntelImage = z.infer<typeof vesselIntelImageSchema>;
 export type VesselIntelProfile = z.infer<typeof vesselIntelProfileSchema>;
 export type VesselIntelResponse = z.infer<typeof vesselIntelResponseSchema>;
+export type MarineWeatherResponse = z.infer<typeof marineWeatherResponseSchema>;

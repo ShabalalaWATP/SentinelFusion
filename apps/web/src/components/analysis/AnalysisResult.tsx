@@ -2,6 +2,7 @@ import { MapPin, Plane, Ship } from "lucide-react";
 import { useEffect } from "react";
 import type { AnalysisAreaResult, AnalysisSummary, RiskLevel } from "@aisstream/shared";
 import { useMapStore } from "../../stores/mapStore";
+import { MarineWeatherPanel } from "../context/MarineWeatherPanel";
 import { RiskDot } from "../vessels/VesselBadges";
 
 type AnalysisResultProps = {
@@ -74,6 +75,7 @@ function AreaAnalysisResult({
         </div>
       </div>
 
+      <MarineWeatherPanel area={area} />
       <AreaVesselList area={area} onInspectVessel={onInspectVessel} />
       <AreaAircraftList area={area} onInspectAircraft={onInspectAircraft} />
       <AnalysisList title="Findings" items={findings.map(cleanAnalysisText)} />

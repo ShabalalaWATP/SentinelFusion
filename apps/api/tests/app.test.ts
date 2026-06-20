@@ -30,6 +30,10 @@ const config: AppConfig = {
   flightPollIntervalMs: 5000,
   flightStaleAfterSeconds: 60,
   flightProviderTimeoutMs: 10000,
+  marineWeatherMode: "mock",
+  marineWeatherTimeoutMs: 10000,
+  marineWeatherCacheSeconds: 900,
+  marineWeatherCacheMaxEntries: 200,
   analysisMode: "mock",
   openaiModel: "gpt-5.4-mini",
   openaiTimeoutMs: 20000,
@@ -57,12 +61,10 @@ const vessel: Vessel = {
 };
 
 let app: FastifyInstance | undefined;
-
 afterEach(async () => {
   await app?.close();
   app = undefined;
 });
-
 describe("api app", () => {
   it("returns health status", async () => {
     app = await createApp(config, { startStreams: false });

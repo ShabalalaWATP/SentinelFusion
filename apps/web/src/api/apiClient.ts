@@ -6,6 +6,7 @@ import {
   analysisSummarySchema,
   flightStreamStatusSchema,
   healthResponseSchema,
+  marineWeatherResponseSchema,
   vesselIntelResponseSchema,
   vesselSnapshotResponseSchema,
   type AisStreamStatus,
@@ -15,6 +16,8 @@ import {
   type AnalysisSummary,
   type FlightStreamStatus,
   type HealthResponse,
+  type MarineWeatherResponse,
+  type TrafficAreaBounds,
   type VesselIntelResponse,
   type VesselSnapshotResponse
 } from "@aisstream/shared";
@@ -26,6 +29,7 @@ export type ApiClient = {
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
+  getMarineWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
   getStreamStatus(): Promise<AisStreamStatus>;
   getVesselIntel(vesselId: string): Promise<VesselIntelResponse>;
   getVessels(): Promise<VesselSnapshotResponse>;
@@ -81,6 +85,18 @@ export function createApiClient(baseUrl: string): ApiClient {
     getFlightStatus: () =>
       getJson("/flight/status", (value) => flightStreamStatusSchema.parse(value)),
     getHealth: () => getJson("/health", (value) => healthResponseSchema.parse(value)),
+    getMarineWeather: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(`/context/marine-weather?${params.toString()}`, (value) =>
+        marineWeatherResponseSchema.parse(value)
+      );
+    },
     getStreamStatus: () =>
       getJson("/stream/status", (value) => aisStreamStatusSchema.parse(value)),
     getVesselIntel: (vesselId) =>

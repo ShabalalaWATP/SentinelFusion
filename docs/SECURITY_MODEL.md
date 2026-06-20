@@ -5,6 +5,7 @@
 - Browser: untrusted. It receives only normalised vessel data from our backend.
 - API: trusted boundary for AISstream credentials, OpenAI credentials, validation, and rate limiting.
 - AISstream.io: external data source used only from the API in live mode.
+- Open-Meteo Marine Weather API: external no-key OSINT context source used only from the API.
 - OpenAI API: external analysis provider used only from the API in live analysis mode.
 
 ## Implemented Controls
@@ -35,6 +36,7 @@
 - OpenAI instructions explicitly treat AIS text fields as untrusted telemetry.
 - `/analysis` drops client-supplied vessel and aircraft intel for entities absent from the server snapshot.
 - Client-supplied cached web-intel context is labelled as untrusted secondary context before reaching OpenAI. It is not treated as verified server telemetry.
+- `/context/marine-weather` accepts only validated area bounds, builds requests to a fixed Open-Meteo marine host, validates provider JSON with Zod, normalises timestamps, uses timeout and bounded cache controls, and returns typed provider states without exposing provider request URLs or credentials.
 
 ## AISstream Risks
 
@@ -55,3 +57,12 @@ Mitigations implemented: reconnect backoff, heartbeat pinging, server-side subsc
 Mitigations implemented: strict input and output schemas, server-side grounding, explicit limitations in responses, deterministic mock fallback, global rate limits, production token guard, explicit local unauthenticated-analysis override, localhost-only Compose exposure, and tests with hostile AIS text. Production cost controls should add per-user quotas and authenticated identities before public exposure.
 
 Client-supplied cached web intel is accepted only for currently known server-side entities and is marked as untrusted secondary context. A future server-owned intel cache should replace browser-submitted cached intel entirely before public deployment.
+
+## OSINT Provider Risks
+
+- SSRF or arbitrary outbound requests through provider URL parameters.
+- Provider outages or rate limits being presented as successful live context.
+- Unbounded outbound provider calls from repeated area analysis.
+- Modelled environmental data being mistaken for navigational advice.
+
+Mitigations implemented for marine weather: the browser can only submit numeric bounds, the API uses a fixed Open-Meteo marine endpoint, provider JSON is schema-validated, request timeout and bounded in-memory cache settings are enforced, provider unavailable/off states are rendered explicitly, and UI limitations state that the data is decision-support context rather than navigational advice.

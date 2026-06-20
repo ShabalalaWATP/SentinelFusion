@@ -23,7 +23,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | 1 | Feed confidence filters | Users can filter or visually de-emphasise stale vessels, stale aircraft, unhealthy providers, and low-confidence sources. Stale thresholds are visible, tested, and affect map, route, alert, and list surfaces consistently. | Add shared feed-confidence selectors, frontend filter state, contact age helpers, UI chips, and alert integration. No new external provider required. |
 | 2 | Provider status console | A Settings/Status panel shows sea, air, and OSINT provider mode, health, coverage bounds, last message, latency, retry/rate-limit state, and last error without credentials. | Reuse `/stream/status` and `/flight/status`, then add an aggregate provider-status client and drawer panel. |
 | 3 | Alert preset builder | Users can enable/disable built-in alert presets such as military contact, emergency aircraft, stale contact, stopped vessel, fast vessel, area entry/exit, provider unhealthy, and OSINT hazard near area. Presets persist locally and do not create duplicate/dead alerts. | Extend `alertStore`, `alertModels`, and `AlertsPanel` with preset toggles and tests. Keep rule logic in alert/anomaly modules, not React components. |
-| 6 | Marine weather layer | Drawn/named areas can fetch current marine conditions and forecast summaries, displayed in a collapsible OSINT panel and optionally on the map. Results include source, timestamp, limitations, and area bounds. | API-side Open-Meteo client first, with optional NOAA CO-OPS station enrichment later. Cache by rounded area/point and never call providers from browser code. |
+| 6 | Marine weather layer | Drawn/named areas can fetch current marine conditions and forecast summaries, displayed in a collapsible OSINT panel and optionally on the map. Results include source, timestamp, limitations, and area bounds. | API-side Open-Meteo client first, with optional NOAA CO-OPS station enrichment later. Cache by provider grid point and full selected bounds, and never call providers from browser code. |
 | 7 | NASA FIRMS fire and smoke impact | With a server-side `FIRMS_MAP_KEY`, selected areas can show recent active fire/thermal anomalies and a map layer. Without a key, the UI shows a clear not-configured state and no mock live claim. | API-side FIRMS area client, strict bounds/day limits, shared schemas, map source/layer, and analysis context. |
 | 8 | Airport and runway enrichment | Aircraft and selected areas show nearest airports/runways with ident, name, type, elevation, runway headings and distance. Works offline from cached/open data without user keys. | Server-owned OurAirports dataset adapter or curated fixture first; expose readonly route and typed client. |
 | 9 | NOTAM/TFR/airspace layer | When configured with a licensed/authorised provider, selected airport/area shows current notices and restrictions with validity windows. Without provider credentials, the app explains that NOTAM/TFR access is not configured. | Provider-adapter boundary only. Do not scrape consumer sites. Prefer FAA/authorised API access or commercial API. |
@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation slice implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Complete for foundation slice, findings remediated |
-| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Pending |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Browser verified for foundation slice |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation and marine weather slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Complete for marine weather slice, findings remediated |
+| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Complete for marine weather slice |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests passed for marine weather slice; Browser attach failed |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Complete for foundation slice, no validated issues remain |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | In progress |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Complete for marine weather slice, no validated issues remain |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated for marine weather slice |
 
 ## Stage Order
 
@@ -71,7 +71,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Quality review: foundation slice
 - [x] Security review: foundation slice
 - [x] Browser verification: foundation slice
-- [ ] Implementation: OSINT provider foundation and first no-key provider
+- [x] Implementation: OSINT provider foundation and first no-key provider
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -100,7 +100,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Browser or UI verification
 - [x] Static security review
 - [ ] Dynamic local security review where practical
-- [ ] Docs updated
+- [x] Docs updated
 
 ## Foundation Slice Evidence
 
@@ -123,6 +123,33 @@ Verification evidence:
 - Code quality review findings remediated: alert/list surfaces now consume filtered traffic, provider/stale alert IDs are incident-scoped, aircraft errors clear when the flight WebSocket reopens, stale-contact logic reuses one helper, and selector exports are used in UI.
 - Cyber review findings remediated: provider health now requires open connection, subscribed stream state, received and normalised telemetry, no current error, and a fresh `lastMessageAt`; no-telemetry provider incidents now include a provider incident epoch that advances after recovery, so a dismissed cold-start outage cannot suppress a later one.
 - Final focused cyber review result: no validated security issues remain for this foundation slice.
+
+## Marine Weather Slice Evidence
+
+Implemented on 2026-06-20:
+
+- Shared `marineWeatherResponseSchema` and `MarineWeatherResponse` type with provider status, source attribution, analysed area, nearest grid point, current conditions, capped forecast, risk reasons, limitations, cache flag, and safe public URL validation.
+- API-side `MarineWeatherService` using the fixed Open-Meteo marine endpoint, strict provider response parsing, WGS84 selected-area centre calculation with antimeridian handling, Unix timestamp normalisation, request timeout, bounded in-memory cache, and `ok`/`not_configured`/`error` result states.
+- `GET /context/marine-weather` route with strict bounds validation and no browser-supplied provider URL.
+- Web API client, `marineWeatherStore`, and collapsible `MarineWeatherPanel` inside area analysis results. The panel auto-refreshes live marine conditions for the analysed area and shows refresh, provider attribution, risk signal, current wave/swell/current/SST context, and clear not-configured/error messaging.
+- Environment example variables for `MARINE_WEATHER_MODE`, timeout, cache TTL, and cache max entries. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- Open-Meteo live sanity check returned HTTP 200 from `marine-api.open-meteo.com` with numeric current and hourly timestamps for the implemented query shape.
+- `corepack pnpm --filter @aisstream/shared test`: passed, shared schema tests now 19 tests.
+- `corepack pnpm --filter @aisstream/api test -- marine-weather-service marine-weather-route app`: passed, API suite reported 58 tests.
+- `corepack pnpm --filter @aisstream/web test -- MarineWeatherPanel marineWeatherStore AnalysisResult`: passed, web suite reported 85 tests.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm test`: passed, full suite reported 162 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Live local API smoke: `GET /context/marine-weather?south=50.68&west=-1.28&north=50.9&east=-0.86` returned `status:"ok"` with Open-Meteo source attribution.
+- Browser plugin limitation: the in-app Browser could not attach to an active or new tab during this slice, and Playwright was not installed, so rendered verification used component tests plus local HTTP/API smoke checks.
+- Code quality review findings remediated: cache keys now include the full selected bounds, overlapping frontend refreshes cannot render stale area results, oversized touched tests were split, and roadmap evidence was corrected.
+- Focused cyber review result: no validated security issues remain for this marine weather slice. The provider uses a fixed server-side Open-Meteo URL, strict bounds validation, response parsing, request timeout, bounded cache, and no browser-exposed provider config.
 
 ## Risks And Blockers
 
