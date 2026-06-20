@@ -30,10 +30,11 @@ const config: AppConfig = {
   flightPollIntervalMs: 5000,
   flightStaleAfterSeconds: 60,
   flightProviderTimeoutMs: 10000,
-  marineWeatherMode: "mock",
-  marineWeatherTimeoutMs: 10000,
-  marineWeatherCacheSeconds: 900,
-  marineWeatherCacheMaxEntries: 200,
+  marineWeatherMode: "mock", marineWeatherTimeoutMs: 10000,
+  marineWeatherCacheSeconds: 900, marineWeatherCacheMaxEntries: 200,
+  firmsMode: "mock", firmsSource: "VIIRS_SNPP_NRT", firmsDayRange: 1,
+  firmsTimeoutMs: 10000, firmsCacheSeconds: 900, firmsCacheMaxEntries: 200,
+  firmsMaxDetections: 150,
   analysisMode: "mock",
   openaiModel: "gpt-5.4-mini",
   openaiTimeoutMs: 20000,
@@ -41,7 +42,6 @@ const config: AppConfig = {
   rateLimitWindow: "1 minute",
   logLevel: "error"
 };
-
 const timestamp = "2026-06-11T10:00:00.000Z";
 const vessel: Vessel = {
   id: "mmsi-232001234",

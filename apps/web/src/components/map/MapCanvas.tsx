@@ -8,11 +8,13 @@ import { fitMapToArea, updateAreaSource } from "./areaOverlay";
 import { applyProjection, isMeaningfulBounds, toBounds } from "./mapCanvasUtils";
 import {
   type MapCanvasSyncState,
+  syncFireAnomalyLayer,
   syncIntelligenceLayers,
   syncMapCanvasState,
   syncTrafficSources
 } from "./mapCanvasSync";
 import { MapControls } from "./MapControls";
+import { useFireAnomalyData } from "./useFireAnomalyData";
 import { useMapTrafficData } from "./useMapTrafficData";
 
 type MapCanvasProps = {
@@ -45,6 +47,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
   const initialStyleIdRef = useRef(styleId);
   const projection = useMapStore((state) => state.projection);
   const intelligenceLayers = useMapStore((state) => state.intelligenceLayers);
+  const fireAnomalyData = useFireAnomalyData();
   const focusRequest = useMapStore((state) => state.focusRequest);
   const trackedTarget = useMapStore((state) => state.trackedTarget);
   const areaDraft = useMapStore((state) => state.areaDraft);
@@ -59,6 +62,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftTrackData,
     aircraftTrackMarkerData,
     areaOverlay,
+    fireAnomalyData,
     intelligenceLayers,
     pointData,
     trackMarkerData,
@@ -83,6 +87,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftTrackData,
     aircraftTrackMarkerData,
     areaOverlay,
+    fireAnomalyData,
     intelligenceLayers,
     pointData,
     trackMarkerData,
@@ -221,6 +226,15 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
 
     syncIntelligenceLayers(map, latestMapStateRef.current);
   }, [intelligenceLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) {
+      return;
+    }
+
+    syncFireAnomalyLayer(map, latestMapStateRef.current);
+  }, [fireAnomalyData, intelligenceLayers]);
 
   useEffect(() => {
     const map = mapRef.current;

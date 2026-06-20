@@ -4,6 +4,7 @@ import {
   aircraftSnapshotResponseSchema,
   analysisRequestSchema,
   analysisSummarySchema,
+  fireContextResponseSchema,
   flightStreamStatusSchema,
   healthResponseSchema,
   marineWeatherResponseSchema,
@@ -14,6 +15,7 @@ import {
   type AircraftIntelResponse,
   type AnalysisRequest,
   type AnalysisSummary,
+  type FireContextResponse,
   type FlightStreamStatus,
   type HealthResponse,
   type MarineWeatherResponse,
@@ -27,6 +29,7 @@ export type ApiClient = {
   analyse(request: AnalysisRequest): Promise<AnalysisSummary>;
   getAircraft(): Promise<AircraftSnapshotResponse>;
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
+  getFireContext(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
   getMarineWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
@@ -82,6 +85,18 @@ export function createApiClient(baseUrl: string): ApiClient {
       postJson(`/aircraft/${encodeURIComponent(aircraftId)}/intel`, {}, (value) =>
         aircraftIntelResponseSchema.parse(value)
       ),
+    getFireContext: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(`/context/fire-anomalies?${params.toString()}`, (value) =>
+        fireContextResponseSchema.parse(value)
+      );
+    },
     getFlightStatus: () =>
       getJson("/flight/status", (value) => flightStreamStatusSchema.parse(value)),
     getHealth: () => getJson("/health", (value) => healthResponseSchema.parse(value)),

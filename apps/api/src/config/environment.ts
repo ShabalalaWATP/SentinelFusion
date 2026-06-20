@@ -25,6 +25,12 @@ const booleanEnv = z.preprocess((value) => {
 export type TrustProxyConfig = false | string | string[] | number;
 
 const flightProviderSchema = z.enum(["mock", "opensky", "adsbexchange", "fr24", "flightaware"]);
+const firmsSourceSchema = z.enum([
+  "MODIS_NRT",
+  "VIIRS_NOAA20_NRT",
+  "VIIRS_NOAA21_NRT",
+  "VIIRS_SNPP_NRT"
+]);
 
 const rawConfigSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -58,6 +64,14 @@ const rawConfigSchema = z.object({
   MARINE_WEATHER_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
   MARINE_WEATHER_CACHE_SECONDS: z.coerce.number().int().min(0).default(900),
   MARINE_WEATHER_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).default(200),
+  FIRMS_MODE: z.enum(["off", "mock", "live"]).default("live"),
+  FIRMS_MAP_KEY: optionalNonEmptyString,
+  FIRMS_SOURCE: firmsSourceSchema.default("VIIRS_SNPP_NRT"),
+  FIRMS_DAY_RANGE: z.coerce.number().int().min(1).max(5).default(1),
+  FIRMS_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  FIRMS_CACHE_SECONDS: z.coerce.number().int().min(0).default(900),
+  FIRMS_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).default(200),
+  FIRMS_MAX_DETECTIONS: z.coerce.number().int().min(1).max(500).default(150),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -103,6 +117,14 @@ export type AppConfig = {
   marineWeatherTimeoutMs: number;
   marineWeatherCacheSeconds: number;
   marineWeatherCacheMaxEntries: number;
+  firmsMode: "off" | "mock" | "live";
+  firmsMapKey?: string;
+  firmsSource: "MODIS_NRT" | "VIIRS_NOAA20_NRT" | "VIIRS_NOAA21_NRT" | "VIIRS_SNPP_NRT";
+  firmsDayRange: number;
+  firmsTimeoutMs: number;
+  firmsCacheSeconds: number;
+  firmsCacheMaxEntries: number;
+  firmsMaxDetections: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -185,6 +207,13 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     marineWeatherTimeoutMs: parsed.MARINE_WEATHER_TIMEOUT_MS,
     marineWeatherCacheSeconds: parsed.MARINE_WEATHER_CACHE_SECONDS,
     marineWeatherCacheMaxEntries: parsed.MARINE_WEATHER_CACHE_MAX_ENTRIES,
+    firmsMode: parsed.FIRMS_MODE,
+    firmsSource: parsed.FIRMS_SOURCE,
+    firmsDayRange: parsed.FIRMS_DAY_RANGE,
+    firmsTimeoutMs: parsed.FIRMS_TIMEOUT_MS,
+    firmsCacheSeconds: parsed.FIRMS_CACHE_SECONDS,
+    firmsCacheMaxEntries: parsed.FIRMS_CACHE_MAX_ENTRIES,
+    firmsMaxDetections: parsed.FIRMS_MAX_DETECTIONS,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,
@@ -215,6 +244,10 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
 
   if (parsed.OPEN_SKY_CLIENT_SECRET) {
     config.openSkyClientSecret = parsed.OPEN_SKY_CLIENT_SECRET;
+  }
+
+  if (parsed.FIRMS_MAP_KEY) {
+    config.firmsMapKey = parsed.FIRMS_MAP_KEY;
   }
 
   if (parsed.ANALYSIS_API_TOKEN) {

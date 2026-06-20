@@ -9,6 +9,7 @@ import type {
   AnalysisRequest,
   AnalysisSummary,
   AnalysisVesselIntelContext,
+  FireContextResponse,
   MarineWeatherResponse,
   TrafficAreaBounds,
   Vessel,
@@ -190,4 +191,8 @@ export interface IAircraftIntelService {
 
 export interface IMarineWeatherService {
   getAreaWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
+}
+
+export interface IFireContextService {
+  getAreaFires(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
 }

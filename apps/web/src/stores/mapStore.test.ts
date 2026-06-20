@@ -150,6 +150,7 @@ describe("mapStore", () => {
       intelligenceLayers: {
         airports: false,
         chokepoints: true,
+        "fire-anomalies": false,
         "maritime-zones": false,
         ports: true,
         "risk-zones": true,
@@ -158,7 +159,9 @@ describe("mapStore", () => {
     });
 
     useMapStore.getState().toggleIntelligenceLayer("airports");
+    useMapStore.getState().setIntelligenceLayer("fire-anomalies", true);
 
     expect(useMapStore.getState().intelligenceLayers.airports).toBe(true);
+    expect(useMapStore.getState().intelligenceLayers["fire-anomalies"]).toBe(true);
   });
 });

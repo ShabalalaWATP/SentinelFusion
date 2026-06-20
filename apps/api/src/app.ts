@@ -15,12 +15,14 @@ import { AircraftAnalyticsService } from "./analytics/aircraft-analytics-service
 import { VesselAnalyticsService } from "./analytics/vessel-analytics-service";
 import type { AppConfig } from "./config/environment";
 import { createLoggerOptions } from "./config/logger";
+import { FireContextService } from "./context/fire-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
 import type {
   IAisStreamClient,
   IFlightTrackingClient,
   IAnalysisAgentService,
   IAircraftIntelService,
+  IFireContextService,
   IMarineWeatherService,
   IVesselIntelService
 } from "./domain/interfaces";
@@ -37,6 +39,7 @@ import { OpenAiVesselIntelService } from "./intel/openai-vessel-intel-service";
 import { RealtimeBroadcaster } from "./realtime/realtime-broadcaster";
 import { registerAircraftRoutes } from "./routes/aircraft";
 import { registerAnalysisRoute } from "./routes/analysis";
+import { registerFireContextRoute } from "./routes/fire-context";
 import { registerFlightStatusRoute } from "./routes/flight-status";
 import { registerHealthRoute } from "./routes/health";
 import { registerMarineWeatherRoute } from "./routes/marine-weather";
@@ -48,6 +51,7 @@ import { registerVesselStream } from "./ws/vessel-stream";
 type CreateAppOptions = {
   analysisService?: IAnalysisAgentService;
   aircraftIntelService?: IAircraftIntelService;
+  fireContextService?: IFireContextService;
   marineWeatherService?: IMarineWeatherService;
   vesselIntelService?: IVesselIntelService;
   seedAircraft?: Aircraft[];
@@ -80,6 +84,7 @@ export async function createApp(
   const analysisService = options.analysisService ?? createAnalysisService(config);
   const aircraftIntelService =
     options.aircraftIntelService ?? createAircraftIntelService(config);
+  const fireContextService = options.fireContextService ?? createFireContextService(config);
   const marineWeatherService =
     options.marineWeatherService ?? createMarineWeatherService(config);
   const vesselIntelService = options.vesselIntelService ?? createVesselIntelService(config);
@@ -106,6 +111,9 @@ export async function createApp(
   await registerHealthRoute(app, config);
   await registerMarineWeatherRoute(app, {
     service: marineWeatherService
+  });
+  await registerFireContextRoute(app, {
+    service: fireContextService
   });
   await registerAircraftRoutes(app, {
     repository: aircraftRepository,
@@ -271,6 +279,10 @@ function createAircraftIntelService(config: AppConfig): IAircraftIntelService {
 
 function createMarineWeatherService(config: AppConfig): IMarineWeatherService {
   return new MarineWeatherService(config);
+}
+
+function createFireContextService(config: AppConfig): IFireContextService {
+  return new FireContextService(config);
 }
 
 function aircraftLabel(aircraft: Aircraft): string {

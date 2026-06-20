@@ -15,6 +15,7 @@ export type MapDomainFilter = "all" | "vessels" | "aircraft";
 export type IntelligenceLayerId =
   | "airports"
   | "chokepoints"
+  | "fire-anomalies"
   | "maritime-zones"
   | "ports"
   | "risk-zones"
@@ -70,6 +71,7 @@ type MapState = {
   ): void;
   stopTracking(): void;
   setAreaOnlyMode(enabled: boolean): void;
+  setIntelligenceLayer(id: IntelligenceLayerId, enabled: boolean): void;
   toggleIntelligenceLayer(id: IntelligenceLayerId): void;
   updateAreaDraft(area: Pick<AreaSelection, "bounds">): void;
   setDomainFilter(filter: MapDomainFilter): void;
@@ -89,6 +91,7 @@ export const useMapStore = create<MapState>((set) => ({
   intelligenceLayers: {
     airports: false,
     chokepoints: true,
+    "fire-anomalies": false,
     "maritime-zones": false,
     ports: true,
     "risk-zones": true,
@@ -205,6 +208,13 @@ export const useMapStore = create<MapState>((set) => ({
   },
   stopTracking: () => set({ trackedTarget: null }),
   setAreaOnlyMode: (areaOnlyMode) => set({ areaOnlyMode }),
+  setIntelligenceLayer: (id, enabled) =>
+    set((state) => ({
+      intelligenceLayers: {
+        ...state.intelligenceLayers,
+        [id]: enabled
+      }
+    })),
   toggleIntelligenceLayer: (id) =>
     set((state) => ({
       intelligenceLayers: {

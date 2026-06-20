@@ -6,6 +6,7 @@
 - API: trusted boundary for AISstream credentials, OpenAI credentials, validation, and rate limiting.
 - AISstream.io: external data source used only from the API in live mode.
 - Open-Meteo Marine Weather API: external no-key OSINT context source used only from the API.
+- NASA FIRMS Area API: external active-fire OSINT source used only from the API with `FIRMS_MAP_KEY` kept server-side.
 - OpenAI API: external analysis provider used only from the API in live analysis mode.
 
 ## Implemented Controls
@@ -37,6 +38,7 @@
 - `/analysis` drops client-supplied vessel and aircraft intel for entities absent from the server snapshot.
 - Client-supplied cached web-intel context is labelled as untrusted secondary context before reaching OpenAI. It is not treated as verified server telemetry.
 - `/context/marine-weather` accepts only validated area bounds, builds requests to a fixed Open-Meteo marine host, validates provider JSON with Zod, normalises timestamps, uses timeout and bounded cache controls, and returns typed provider states without exposing provider request URLs or credentials.
+- `/context/fire-anomalies` accepts only validated area bounds, builds requests to the fixed NASA FIRMS host, keeps `FIRMS_MAP_KEY` server-side, splits antimeridian boxes into valid provider requests, parses CSV into typed/capped detections, uses timeout and bounded cache controls, and returns typed provider states without exposing provider request URLs or credentials.
 
 ## AISstream Risks
 
@@ -63,6 +65,8 @@ Client-supplied cached web intel is accepted only for currently known server-sid
 - SSRF or arbitrary outbound requests through provider URL parameters.
 - Provider outages or rate limits being presented as successful live context.
 - Unbounded outbound provider calls from repeated area analysis.
-- Modelled environmental data being mistaken for navigational advice.
+- Modelled environmental or satellite-detection data being mistaken for navigational, emergency-response, or legal advice.
 
 Mitigations implemented for marine weather: the browser can only submit numeric bounds, the API uses a fixed Open-Meteo marine endpoint, provider JSON is schema-validated, request timeout and bounded in-memory cache settings are enforced, provider unavailable/off states are rendered explicitly, and UI limitations state that the data is decision-support context rather than navigational advice.
+
+Mitigations implemented for NASA FIRMS: the browser can only submit numeric bounds, the API uses a fixed NASA FIRMS endpoint, area/span limits reject over-large provider requests, provider cache keys are bucketed, in-flight provider requests are coalesced, provider response bytes and rows are capped before processing, the map key is never sent to browser code or API responses, provider CSV is normalised into a typed schema, detections are capped before rendering, request timeout and bounded in-memory cache settings are enforced, and UI limitations state that active-fire points are satellite thermal detections that can include false positives or missed fires.

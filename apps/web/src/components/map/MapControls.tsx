@@ -8,6 +8,7 @@ const intelligenceLayerOptions: Array<{ id: IntelligenceLayerId; label: string }
   { id: "ports", label: "Ports" },
   { id: "airports", label: "Airports" },
   { id: "chokepoints", label: "Chokepoints" },
+  { id: "fire-anomalies", label: "Fire points" },
   { id: "risk-zones", label: "Risk zones" },
   { id: "shipping-lanes", label: "Shipping lanes" },
   { id: "maritime-zones", label: "Maritime zones" }

@@ -58,3 +58,49 @@ export const marineWeatherResponseSchema = z.object({
   limitations: z.array(z.string().min(1).max(240)).min(1).max(6),
   error: z.string().min(1).max(240).optional()
 });
+
+export const fireContextSourceSchema = z.object({
+  title: z.string().min(1).max(120),
+  url: publicHttpUrlSchema,
+  attribution: z.string().min(1).max(180)
+});
+
+export const fireAnomalySchema = z.object({
+  id: z.string().min(1).max(120),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  acquiredAt: z.string().datetime(),
+  confidence: z.enum(["low", "nominal", "high", "unknown"]),
+  rawConfidence: z.string().min(1).max(24).optional(),
+  satellite: z.string().min(1).max(40).optional(),
+  instrument: z.string().min(1).max(40).optional(),
+  version: z.string().min(1).max(40).optional(),
+  dayNight: z.enum(["day", "night", "unknown"]),
+  brightnessKelvin: z.number().optional(),
+  fireRadiativePowerMw: z.number().nonnegative().optional(),
+  scanKm: z.number().nonnegative().optional(),
+  trackKm: z.number().nonnegative().optional()
+});
+
+export const fireContextResponseSchema = z.object({
+  status: z.enum(["ok", "not_configured", "error"]),
+  mode: z.enum(["mock", "live"]),
+  source: fireContextSourceSchema,
+  generatedAt: z.string().datetime(),
+  cached: z.boolean(),
+  area: analysisAreaBoundsSchema.optional(),
+  sourceDataset: z.string().min(1).max(40),
+  dayRange: z.number().int().min(1).max(5),
+  detections: z.array(fireAnomalySchema).max(500),
+  summary: z.object({
+    count: z.number().int().nonnegative(),
+    highConfidenceCount: z.number().int().nonnegative(),
+    dayCount: z.number().int().nonnegative(),
+    nightCount: z.number().int().nonnegative(),
+    maxFireRadiativePowerMw: z.number().nonnegative().optional(),
+    latestAcquiredAt: z.string().datetime().optional()
+  }),
+  risk: marineWeatherRiskSchema,
+  limitations: z.array(z.string().min(1).max(260)).min(1).max(6),
+  error: z.string().min(1).max(240).optional()
+});

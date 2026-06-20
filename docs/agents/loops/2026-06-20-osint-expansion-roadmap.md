@@ -72,6 +72,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Security review: foundation slice
 - [x] Browser verification: foundation slice
 - [x] Implementation: OSINT provider foundation and first no-key provider
+- [x] Implementation: NASA FIRMS active-fire provider slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -150,6 +151,34 @@ Verification evidence:
 - Browser plugin limitation: the in-app Browser could not attach to an active or new tab during this slice, and Playwright was not installed, so rendered verification used component tests plus local HTTP/API smoke checks.
 - Code quality review findings remediated: cache keys now include the full selected bounds, overlapping frontend refreshes cannot render stale area results, oversized touched tests were split, and roadmap evidence was corrected.
 - Focused cyber review result: no validated security issues remain for this marine weather slice. The provider uses a fixed server-side Open-Meteo URL, strict bounds validation, response parsing, request timeout, bounded cache, and no browser-exposed provider config.
+
+## NASA FIRMS Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `fireContextResponseSchema` and `FireContextResponse` type with provider status, source attribution, analysed area, source dataset, day range, capped active-fire detections, summary counts, risk reasons, limitations, cache flag, and safe public URL validation.
+- API-side `FireContextService` using the fixed NASA FIRMS Area API host, server-side `FIRMS_MAP_KEY`, strict selected-area bounds validation, fire-context-specific area/span limits, bucketed provider cache keys, in-flight provider request coalescing, antimeridian splitting, CSV byte and row caps, request timeout, bounded in-memory cache, capped detections, and `ok`/`not_configured`/`error` result states.
+- `GET /context/fire-anomalies` route with strict bounds validation and no browser-supplied provider URL.
+- Web API client, `fireContextStore`, collapsible `FireContextPanel`, `AreaContextStack`, and dynamic MapLibre fire-points overlay controlled by the existing intelligence-layer toggles and scoped to the current area-analysis result.
+- Environment example variables for `FIRMS_MODE`, `FIRMS_MAP_KEY`, source, day range, timeout, cache TTL, cache max entries, and max detections. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm --filter @aisstream/shared test`: passed, shared schema tests now 20 tests.
+- `corepack pnpm --filter @aisstream/api test -- fire-context-service fire-context-route app`: passed after remediation, API targeted suite reported 70 tests.
+- `corepack pnpm --filter @aisstream/web test -- FireContextPanel fireContextStore fireAnomalyOverlay useFireAnomalyData AnalysisResult mapStore`: passed after remediation, web targeted suite reported 96 tests.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm test`: passed, full suite reported shared 20 tests, API 70 tests, and web 96 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, and FIRMS key assignments: no matches.
+- File-size guard: touched FIRMS files remain within the 350-line preference; only the pre-existing alert files remain above the threshold.
+- In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`; DOM was nonblank, no framework overlay was detected, console errors/warnings were empty, and the Map controls panel exposed a unique `Fire points` toggle that changed `aria-pressed` from `false` to `true`. Browser screenshot capture timed out twice through the browser backend.
+- Security review finding remediated: over-large unauthenticated FIRMS requests are rejected before provider access, provider cache keys are bucketed, in-flight requests are coalesced, provider response bytes and rows are capped, and CSV processing stops before unbounded parsing.
+- Code quality review findings remediated: limits are wired into route/service, stale fire points are scoped to the current area-analysis result through `useFireAnomalyData`, and `FIRMS_MODE=off` has distinct disabled-mode remediation text.
+- Focused cyber review result: no validated security issues remain for this FIRMS slice.
 
 ## Risks And Blockers
 

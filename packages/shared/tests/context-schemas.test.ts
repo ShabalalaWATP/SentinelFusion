@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { marineWeatherResponseSchema } from "../src";
+import { fireContextResponseSchema, marineWeatherResponseSchema } from "../src";
 
 const now = new Date("2026-06-20T12:00:00.000Z").toISOString();
 
@@ -63,5 +63,56 @@ describe("context schemas", () => {
         limitations: ["Test limitation."]
       })
     ).toThrow();
+  });
+
+  it("validates fire context responses", () => {
+    const parsed = fireContextResponseSchema.parse({
+      status: "ok",
+      mode: "live",
+      source: {
+        title: "NASA FIRMS Active Fire",
+        url: "https://firms.modaps.eosdis.nasa.gov/api/area/",
+        attribution: "Active fire data by NASA FIRMS, LANCE, EOSDIS"
+      },
+      generatedAt: now,
+      cached: false,
+      area: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 },
+      sourceDataset: "VIIRS_SNPP_NRT",
+      dayRange: 1,
+      detections: [
+        {
+          id: "VIIRS_SNPP_NRT:50.79000:-1.04000:2026-06-21T09:30:00.000Z:18.60",
+          latitude: 50.79,
+          longitude: -1.04,
+          acquiredAt: "2026-06-21T09:30:00.000Z",
+          confidence: "high",
+          rawConfidence: "h",
+          satellite: "N",
+          instrument: "VIIRS",
+          version: "2.0NRT",
+          dayNight: "day",
+          brightnessKelvin: 331.4,
+          fireRadiativePowerMw: 18.6
+        }
+      ],
+      summary: {
+        count: 1,
+        highConfidenceCount: 1,
+        dayCount: 1,
+        nightCount: 0,
+        maxFireRadiativePowerMw: 18.6,
+        latestAcquiredAt: "2026-06-21T09:30:00.000Z"
+      },
+      risk: {
+        level: "medium",
+        reasons: ["One active fire detection may affect area operations."]
+      },
+      limitations: [
+        "FIRMS active-fire points are satellite thermal detections and can include false positives or missed fires."
+      ]
+    });
+
+    expect(parsed.detections[0]?.confidence).toBe("high");
+    expect(parsed.summary.maxFireRadiativePowerMw).toBe(18.6);
   });
 });
