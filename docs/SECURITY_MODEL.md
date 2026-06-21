@@ -12,6 +12,7 @@
 - Filed-route providers: future licensed FlightAware AeroAPI, Flightradar24 API, or equivalent planned-route feeds used only from the API. No consumer flight-radar pages are scraped.
 - Sanctions and ownership screening providers: future licensed OpenSanctions or custom screening feeds used only from the API. AIS vessel names, callsigns, and destinations are weak search hints, not verified identity.
 - NASA GIBS: external public satellite imagery source. The API constructs fixed-host WMS snapshot URLs for validated areas; no provider credentials are used or exposed.
+- ACLED: external conflict and protest event source used only from the API when authorised credentials are configured. ACLED access tokens and username/password credentials remain server-side.
 - OpenAI API: external analysis provider used only from the API in live analysis mode.
 
 ## Implemented Controls
@@ -37,7 +38,7 @@
 - AISstream parser accepts only usable, schema-valid vessel updates and records dropped frames.
 - `/stream/status` exposes telemetry without credentials.
 - `/vessels` and `/ws/vessels` expose public normalised AIS telemetry in this POC. The WebSocket `Origin` check is browser-origin hygiene, not an authentication control.
-- `/analysis` and API-side enrichment routes validate input with Zod and can be guarded with `ANALYSIS_API_TOKEN`.
+- `/analysis`, API-side enrichment routes, and credential-backed conflict/protest context validate input with Zod and can be guarded with `ANALYSIS_API_TOKEN`.
 - OpenAI prompts are grounded in server-side repository snapshots and analytics.
 - OpenAI instructions explicitly treat AIS text fields as untrusted telemetry.
 - `/analysis` drops client-supplied vessel and aircraft intel for entities absent from the server snapshot.
@@ -49,6 +50,7 @@
 - `/aircraft/:id/filed-route` resolves selected aircraft from the server repository, returns typed provider states, and defaults to not configured until a licensed filed-route provider adapter is added. The browser supplies only an aircraft id, not callsign, route text, provider URLs, or credentials.
 - `/vessels/:id/sanctions-screening` uses the same optional `ANALYSIS_API_TOKEN` guard as enrichment routes, resolves selected vessels from the server repository, returns typed provider states, and defaults to not configured until a licensed sanctions or ownership provider adapter is added. The browser supplies only a vessel id, not vessel identity claims, provider URLs, or credentials. Mock matches require explicit API-side configuration and are labelled as review leads.
 - `/context/satellite-snapshot` accepts only validated area bounds, rejects over-large or antimeridian-crossing areas before image URL construction, builds NASA GIBS URLs from a fixed host and server-side layer settings, returns typed provider states, and sends no provider credentials or browser-side configuration.
+- `/context/conflict-events` uses the same optional `ANALYSIS_API_TOKEN` guard as enrichment routes, accepts only validated area bounds, rejects over-large areas before provider access, builds ACLED API and OAuth requests against a fixed host, keeps ACLED credentials server-side, caps provider rows and response bytes, filters events back to the selected bounds, and returns typed provider states without exposing provider request URLs or bearer tokens.
 
 ## AISstream Risks
 
@@ -90,3 +92,5 @@ Mitigations implemented for filed routes: the browser can request a selected air
 Mitigations implemented for sanctions and ownership screening: the browser can request a selected vessel by id only, the API resolves vessel identity from server state, `ANALYSIS_API_TOKEN` protects screening when configured, unauthorised requests do not invoke the screening service, no provider URL is accepted from the client, default and unimplemented live modes return explicit not-configured responses, mock output requires an explicit API-side mode, match links are restricted to `http` and `https`, and UI text presents matches as review leads with confidence scores and false-positive warnings rather than compliance facts.
 
 Mitigations implemented for satellite snapshots: the browser can only submit numeric bounds, selected areas have satellite-specific span and area limits, antimeridian-crossing WMS boxes are rejected for this first implementation, the API constructs image URLs against the fixed NASA GIBS host using server-side layer/date settings, image and source URLs are schema-validated as `http` or `https`, the UI revalidates URLs before rendering, and limitations state that browse imagery can be cloud-obscured, delayed, or unsuitable for navigation or authoritative intelligence.
+
+Mitigations implemented for conflict and protest context: the browser can only submit numeric bounds, `ANALYSIS_API_TOKEN` protects provider-backed lookups when configured, unauthorised requests do not invoke the conflict provider service, selected areas have conflict-specific span and area limits, ACLED API and OAuth calls use a fixed server-side host, credentials and bearer tokens are never returned to the browser, OAuth tokens are cached server-side with expiry, provider response bytes and rows are capped before processing, antimeridian selections are split into valid provider requests, results are filtered back to the selected bounds, and UI copy presents conflict/protest events as reported OSINT leads with source, confidence, and false-negative limitations rather than confirmed operational truth.

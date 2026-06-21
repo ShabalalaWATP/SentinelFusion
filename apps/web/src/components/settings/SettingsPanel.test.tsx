@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { AisStreamStatus, FlightStreamStatus } from "@aisstream/shared";
 import { useAircraftStore } from "../../stores/aircraftStore";
+import { useAnalysisAccessStore } from "../../stores/analysisAccessStore";
 import { useFeedFilterStore } from "../../stores/feedFilterStore";
 import { useVesselStore } from "../../stores/vesselStore";
 import { SettingsPanel } from "./SettingsPanel";
@@ -46,6 +47,8 @@ const airStatus: FlightStreamStatus = {
 describe("SettingsPanel", () => {
   beforeEach(() => {
     cleanup();
+    window.sessionStorage.clear();
+    useAnalysisAccessStore.getState().clearToken();
     useFeedFilterStore.getState().resetSettings();
     useVesselStore.setState({
       connectionStatus: "open",
@@ -90,5 +93,24 @@ describe("SettingsPanel", () => {
     render(<SettingsPanel />);
 
     expect(screen.getByText("No telemetry has been received yet.")).toBeTruthy();
+  });
+
+  it("stores the protected API token for the browser session", () => {
+    render(<SettingsPanel />);
+
+    fireEvent.change(screen.getByPlaceholderText("Paste local API token"), {
+      target: { value: " local-token " }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save token" }));
+
+    expect(useAnalysisAccessStore.getState().token).toBe("local-token");
+    expect(window.sessionStorage.getItem("aisstream.analysisAccessToken.v1")).toBe(
+      "local-token"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(useAnalysisAccessStore.getState().token).toBe("");
+    expect(window.sessionStorage.getItem("aisstream.analysisAccessToken.v1")).toBeNull();
   });
 });

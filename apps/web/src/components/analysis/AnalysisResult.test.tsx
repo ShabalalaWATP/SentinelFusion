@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AnalysisSummary } from "@aisstream/shared";
 import { useAirspaceContextStore } from "../../stores/airspaceContextStore";
 import { useAirportContextStore } from "../../stores/airportContextStore";
+import { useConflictContextStore } from "../../stores/conflictContextStore";
 import { useFireContextStore } from "../../stores/fireContextStore";
 import { useMapStore } from "../../stores/mapStore";
 import { useMarineWeatherStore } from "../../stores/marineWeatherStore";
+import { useSatelliteContextStore } from "../../stores/satelliteContextStore";
 import { AnalysisResult } from "./AnalysisResult";
 
 const result: AnalysisSummary = {
@@ -104,6 +106,18 @@ describe("AnalysisResult", () => {
       refreshAircraft: async () => undefined
     });
     useFireContextStore.setState({
+      status: "idle",
+      result: null,
+      error: null,
+      refresh: async () => undefined
+    });
+    useConflictContextStore.setState({
+      status: "idle",
+      result: null,
+      error: null,
+      refresh: async () => undefined
+    });
+    useSatelliteContextStore.setState({
       status: "idle",
       result: null,
       error: null,

@@ -19,6 +19,7 @@ import { AirspaceContextService } from "./context/airspace-context-service";
 import { AirportContextService } from "./context/airport-context-service";
 import { FiledRouteContextService } from "./context/filed-route-context-service";
 import { FireContextService } from "./context/fire-context-service";
+import { ConflictContextService } from "./context/conflict-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
 import { SanctionsScreeningService } from "./context/sanctions-screening-service";
 import { SatelliteContextService } from "./context/satellite-context-service";
@@ -31,6 +32,7 @@ import type {
   IAircraftIntelService,
   IFlightRouteContextService,
   IFireContextService,
+  IConflictContextService,
   IMarineWeatherService,
   ISanctionsScreeningService,
   ISatelliteContextService,
@@ -52,6 +54,7 @@ import { registerAirspaceContextRoute } from "./routes/airspace-context";
 import { registerAnalysisRoute } from "./routes/analysis";
 import { registerAirportContextRoute } from "./routes/airport-context";
 import { registerFireContextRoute } from "./routes/fire-context";
+import { registerConflictContextRoute } from "./routes/conflict-context";
 import { registerFlightStatusRoute } from "./routes/flight-status";
 import { registerHealthRoute } from "./routes/health";
 import { registerMarineWeatherRoute } from "./routes/marine-weather";
@@ -68,6 +71,7 @@ type CreateAppOptions = {
   airportContextService?: IAirportContextService;
   filedRouteContextService?: IFlightRouteContextService;
   fireContextService?: IFireContextService;
+  conflictContextService?: IConflictContextService;
   marineWeatherService?: IMarineWeatherService;
   sanctionsScreeningService?: ISanctionsScreeningService;
   satelliteContextService?: ISatelliteContextService;
@@ -109,6 +113,8 @@ export async function createApp(
   const filedRouteContextService =
     options.filedRouteContextService ?? createFiledRouteContextService(config);
   const fireContextService = options.fireContextService ?? createFireContextService(config);
+  const conflictContextService =
+    options.conflictContextService ?? createConflictContextService(config);
   const marineWeatherService =
     options.marineWeatherService ?? createMarineWeatherService(config);
   const sanctionsScreeningService =
@@ -148,6 +154,10 @@ export async function createApp(
   });
   await registerFireContextRoute(app, {
     service: fireContextService
+  });
+  await registerConflictContextRoute(app, {
+    service: conflictContextService,
+    ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerSatelliteContextRoute(app, {
     service: satelliteContextService
@@ -343,6 +353,10 @@ function createMarineWeatherService(config: AppConfig): IMarineWeatherService {
 
 function createFireContextService(config: AppConfig): IFireContextService {
   return new FireContextService(config);
+}
+
+function createConflictContextService(config: AppConfig): IConflictContextService {
+  return new ConflictContextService(config);
 }
 
 function aircraftLabel(aircraft: Aircraft): string {

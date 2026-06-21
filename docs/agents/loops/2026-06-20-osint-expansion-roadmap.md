@@ -30,7 +30,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | 10 | Filed route enrichment | Selected aircraft can show filed/planned route, origin/destination, schedule, and provider confidence when licensed data is configured. Observed tracks remain labelled separately. | Add `IFlightRouteProvider` with FlightAware/FR24 adapters behind server env vars. No browser keys. |
 | 11 | Sanctions and ownership screening | Selected vessels/operators can be screened with confidence scoring, source links, and false-positive warnings. Matches never silently become facts without evidence. | Start with OpenSanctions API/bulk boundary and server-owned cache. Treat AIS names as weak hints. |
 | 14 | Satellite area snapshot | Selected area can display a recent satellite imagery snapshot or tile layer with date/source/limitations. If provider auth is missing, show not-configured state. | Start with NASA GIBS public WMTS/WMS imagery for low-secret baseline; Sentinel Hub can be added later behind OAuth. |
-| 16 | Conflict and protest overlay | Selected areas can show recent conflict/protest/news events with source, event date, confidence/limitations, and map markers. Users can filter this layer off. | Trial with GDELT/UCDP public data first. ACLED requires account/API handling and should be provider-configured. |
+| 16 | Conflict and protest overlay | Selected areas can show recent conflict/protest/news events with source, event date, confidence/limitations, and map markers. Users can filter this layer off. | ACLED configured-provider adapter first, with API-only access token or OAuth username/password support and a clear not-configured state when access is unavailable. |
 
 ## Acceptance Criteria
 
@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, filed-route-contract, sanctions-contract, and satellite-snapshot slices implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Satellite slice findings remediated |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, filed-route-contract, sanctions-contract, satellite-snapshot, and conflict/protest slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Complete for conflict/protest slice; findings remediated |
 | Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Satellite schemas split to keep touched shared files under the preferred line limit |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for satellite slice |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Browser smoke passed for conflict/protest slice |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Final satellite slice review found no validated issue |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through satellite snapshot slice |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Complete for conflict/protest slice; no validated issue remains |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through conflict/protest slice |
 
 ## Stage Order
 
@@ -78,9 +78,10 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Implementation: filed-route provider-contract slice
 - [x] Implementation: sanctions and ownership provider-contract slice
 - [x] Implementation: satellite area snapshot slice
+- [x] Implementation: conflict/protest provider slice
 - [ ] Implementation: credentialed provider adapters
-- [ ] Final verification
-- [ ] Documentation
+- [x] Final verification
+- [x] Documentation
 - [ ] Next-goal selection
 
 ## Decision Record
@@ -94,7 +95,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace and filed-route provider contracts implemented first |
 | Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Provider contract implemented with auth guard and review-lead UI |
 | Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Implemented with fixed-host WMS snapshot URLs |
-| Start conflict/protest overlays with public GDELT/UCDP data, ACLED as configured provider. | Research Agent | 7 | 5 | 5 | 7 | Trial |
+| Start conflict/protest overlays with an ACLED configured-provider adapter. | Research Agent | 7 | 5 | 5 | 7 | Implemented with ACLED configured-provider adapter first |
 
 ## Verification Gates
 
@@ -330,6 +331,31 @@ Verification evidence:
 - In-app Browser smoke: `http://localhost:5173/` rendered title `Sentinel Fusion`, one map canvas, no Vite overlay, no fresh warning/error console logs.
 - Code quality review findings remediated: mock mode no longer renders a remote NASA image, large-area errors stay in the typed satellite context contract, WMS URL tests assert exact fixed-host parameters, and satellite schemas moved to a dedicated shared module.
 - Security review: initial and final satellite-slice reviews found no validated issue. The final review covered SSRF/provider URL control, browser image/source URL handling, mock/off/live modes, error handling, bounds validation, secrets exposure, XSS, CORS/auth implications, and changed shared schema risk.
+
+## Conflict/Protest Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `conflictContextResponseSchema` and `ConflictContextResponse` type with provider status, source attribution, analysed area, capped events, event confidence, severity, fatalities, limitations, and optional error messaging.
+- API-side `ConflictContextService` using ACLED as a configured live provider. The service builds fixed-host ACLED requests, keeps access tokens or username/password credentials server-side, supports OAuth token acquisition, validates selected bounds, splits antimeridian areas, caps response bytes and rows, filters provider events back to the selected area, deduplicates events, and uses bounded cache/in-flight request coalescing.
+- `GET /context/conflict-events` route with strict selected-area bounds validation and the existing analysis-token guard when live ACLED credentials are configured.
+- Startup protection so `CONFLICT_CONTEXT_MODE=live` cannot use ACLED credentials unless `ANALYSIS_API_TOKEN` is configured. Docker Compose now passes `ANALYSIS_API_TOKEN` through to the API container.
+- Web API client, `conflictContextStore`, collapsible `ConflictContextPanel`, area-context stack integration, and a dynamic `conflict-events` map overlay controlled by the existing intelligence-layer toggles.
+- Environment example variables for `CONFLICT_CONTEXT_MODE`, ACLED provider settings, timeout/cache/result limits, and ACLED credential placeholders. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm lint`: passed.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm test`: passed, full suite reported shared 26 tests, API 114 tests, and web 148 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight provider, analysis token, ACLED, and generic key patterns found no matches.
+- File-size guard: no touched typed source or test file is over the 350-line preference.
+- In-app Browser smoke: `http://localhost:5173/` rendered title `Sentinel Fusion`, live map canvas and global AIS markers, compact map controls, no fresh console errors, and saved-area focus enabled the selected-area controls with Portsmouth bounds visible. The browser smoke did not trigger a live AI/ACLED area analysis call; panel states and overlay behaviour are covered by component/store/map tests.
+- Code quality review findings remediated: provider errors now render distinctly from not-configured states, runtime provider configuration is ACLED-only until another adapter exists, touched typed files stay under the preferred line limit, and roadmap wording now matches the ACLED-first implementation.
+- Security review findings remediated: unauthorised `/context/conflict-events` requests cannot spend ACLED credentials when `ANALYSIS_API_TOKEN` is configured, API startup now refuses live ACLED credentials without `ANALYSIS_API_TOKEN`, Compose forwards that token, provider errors scrub bearer tokens, fixed ACLED host construction avoids browser-controlled provider URLs, and final cyber review found no validated security issue in scope.
 
 ## Risks And Blockers
 

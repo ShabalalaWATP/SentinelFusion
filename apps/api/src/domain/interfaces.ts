@@ -13,6 +13,7 @@ import type {
   AnalysisRequest,
   AnalysisSummary,
   AnalysisVesselIntelContext,
+  ConflictContextResponse,
   FireContextResponse,
   MarineWeatherResponse,
   SatelliteContextResponse,
@@ -227,4 +228,8 @@ export interface IMarineWeatherService {
 
 export interface IFireContextService {
   getAreaFires(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
+}
+
+export interface IConflictContextService {
+  getAreaConflict(bounds: TrafficAreaBounds): Promise<ConflictContextResponse>;
 }

@@ -5,6 +5,11 @@ import {
   updateAirportContextSource,
   updateAirportContextVisibility
 } from "./airportContextOverlay";
+import {
+  ensureConflictContextLayers,
+  updateConflictContextSource,
+  updateConflictContextVisibility
+} from "./conflictContextOverlay";
 import { updateAreaSource } from "./areaOverlay";
 import {
   ensureFireAnomalyLayers,
@@ -24,6 +29,7 @@ export type MapCanvasSyncState = {
   aircraftTrackMarkerData: AircraftSourceArgs[3];
   airportContextData: Parameters<typeof updateAirportContextSource>[1];
   areaOverlay: Parameters<typeof updateAreaSource>[1];
+  conflictContextData: Parameters<typeof updateConflictContextSource>[1];
   fireAnomalyData: Parameters<typeof updateFireAnomalySource>[1];
   intelligenceLayers: Parameters<typeof updateIntelligenceLayerVisibility>[1];
   pointData: VesselSourceArgs[1];
@@ -36,11 +42,14 @@ export function syncMapCanvasState(map: MapLibreMap, state: MapCanvasSyncState):
   syncTrafficSources(map, state);
   ensureIntelligenceLayers(map);
   ensureAirportContextLayers(map);
+  ensureConflictContextLayers(map);
   ensureFireAnomalyLayers(map);
   updateAreaSource(map, state.areaOverlay);
   updateIntelligenceLayerVisibility(map, state.intelligenceLayers);
   updateAirportContextSource(map, state.airportContextData);
   updateAirportContextVisibility(map, state.intelligenceLayers.airports);
+  updateConflictContextSource(map, state.conflictContextData);
+  updateConflictContextVisibility(map, state.intelligenceLayers["conflict-events"]);
   updateFireAnomalySource(map, state.fireAnomalyData);
   updateFireAnomalyVisibility(map, state.intelligenceLayers["fire-anomalies"]);
   applyProjection(map, state.projection);
@@ -61,9 +70,11 @@ export function syncTrafficSources(map: MapLibreMap, state: MapCanvasSyncState):
 export function syncIntelligenceLayers(map: MapLibreMap, state: MapCanvasSyncState): void {
   ensureIntelligenceLayers(map);
   ensureAirportContextLayers(map);
+  ensureConflictContextLayers(map);
   ensureFireAnomalyLayers(map);
   updateIntelligenceLayerVisibility(map, state.intelligenceLayers);
   updateAirportContextVisibility(map, state.intelligenceLayers.airports);
+  updateConflictContextVisibility(map, state.intelligenceLayers["conflict-events"]);
   updateFireAnomalyVisibility(map, state.intelligenceLayers["fire-anomalies"]);
 }
 
@@ -77,4 +88,10 @@ export function syncFireAnomalyLayer(map: MapLibreMap, state: MapCanvasSyncState
   ensureFireAnomalyLayers(map);
   updateFireAnomalySource(map, state.fireAnomalyData);
   updateFireAnomalyVisibility(map, state.intelligenceLayers["fire-anomalies"]);
+}
+
+export function syncConflictContextLayer(map: MapLibreMap, state: MapCanvasSyncState): void {
+  ensureConflictContextLayers(map);
+  updateConflictContextSource(map, state.conflictContextData);
+  updateConflictContextVisibility(map, state.intelligenceLayers["conflict-events"]);
 }

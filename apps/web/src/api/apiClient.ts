@@ -6,6 +6,7 @@ import {
   analysisSummarySchema,
   airspaceContextResponseSchema,
   airportContextResponseSchema,
+  conflictContextResponseSchema,
   filedRouteContextResponseSchema,
   fireContextResponseSchema,
   flightStreamStatusSchema,
@@ -22,6 +23,7 @@ import {
   type AnalysisSummary,
   type AirspaceContextResponse,
   type AirportContextResponse,
+  type ConflictContextResponse,
   type FiledRouteContextResponse,
   type FireContextResponse,
   type FlightStreamStatus,
@@ -34,6 +36,7 @@ import {
   type VesselSnapshotResponse
 } from "@aisstream/shared";
 import { env } from "../config/env";
+import { getAnalysisAccessToken } from "../stores/analysisAccessStore";
 
 export type ApiClient = {
   analyse(request: AnalysisRequest): Promise<AnalysisSummary>;
@@ -43,6 +46,7 @@ export type ApiClient = {
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
   getAirspaceContext(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
   getAirportContext(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
+  getConflictContext(bounds: TrafficAreaBounds): Promise<ConflictContextResponse>;
   getFireContext(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
@@ -54,12 +58,18 @@ export type ApiClient = {
   getVessels(): Promise<VesselSnapshotResponse>;
 };
 
+type RequestOptions = {
+  auth?: boolean;
+};
+
 export function createApiClient(baseUrl: string): ApiClient {
-  async function getJson<T>(path: string, parse: (value: unknown) => T): Promise<T> {
+  async function getJson<T>(
+    path: string,
+    parse: (value: unknown) => T,
+    options: RequestOptions = {}
+  ): Promise<T> {
     const response = await fetch(`${baseUrl}${path}`, {
-      headers: {
-        accept: "application/json"
-      }
+      headers: jsonHeaders(options)
     });
 
     if (!response.ok) {
@@ -72,14 +82,12 @@ export function createApiClient(baseUrl: string): ApiClient {
   async function postJson<T>(
     path: string,
     body: unknown,
-    parse: (value: unknown) => T
+    parse: (value: unknown) => T,
+    options: RequestOptions = {}
   ): Promise<T> {
     const response = await fetch(`${baseUrl}${path}`, {
       method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json"
-      },
+      headers: jsonHeaders(options, { "content-type": "application/json" }),
       body: JSON.stringify(body)
     });
 
@@ -92,8 +100,11 @@ export function createApiClient(baseUrl: string): ApiClient {
 
   return {
     analyse: (request) =>
-      postJson("/analysis", analysisRequestSchema.parse(request), (value) =>
-        analysisSummarySchema.parse(value)
+      postJson(
+        "/analysis",
+        analysisRequestSchema.parse(request),
+        (value) => analysisSummarySchema.parse(value),
+        { auth: true }
       ),
     getAircraft: () =>
       getJson("/aircraft", (value) => aircraftSnapshotResponseSchema.parse(value)),
@@ -106,8 +117,11 @@ export function createApiClient(baseUrl: string): ApiClient {
         filedRouteContextResponseSchema.parse(value)
       ),
     getAircraftIntel: (aircraftId) =>
-      postJson(`/aircraft/${encodeURIComponent(aircraftId)}/intel`, {}, (value) =>
-        aircraftIntelResponseSchema.parse(value)
+      postJson(
+        `/aircraft/${encodeURIComponent(aircraftId)}/intel`,
+        {},
+        (value) => aircraftIntelResponseSchema.parse(value),
+        { auth: true }
       ),
     getAirspaceContext: (bounds) => {
       const params = new URLSearchParams({
@@ -131,6 +145,20 @@ export function createApiClient(baseUrl: string): ApiClient {
 
       return getJson(`/context/airports?${params.toString()}`, (value) =>
         airportContextResponseSchema.parse(value)
+      );
+    },
+    getConflictContext: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(
+        `/context/conflict-events?${params.toString()}`,
+        (value) => conflictContextResponseSchema.parse(value),
+        { auth: true }
       );
     },
     getFireContext: (bounds) => {
@@ -161,8 +189,10 @@ export function createApiClient(baseUrl: string): ApiClient {
       );
     },
     getSanctionsScreening: (vesselId) =>
-      getJson(`/vessels/${encodeURIComponent(vesselId)}/sanctions-screening`, (value) =>
-        sanctionsScreeningResponseSchema.parse(value)
+      getJson(
+        `/vessels/${encodeURIComponent(vesselId)}/sanctions-screening`,
+        (value) => sanctionsScreeningResponseSchema.parse(value),
+        { auth: true }
       ),
     getSatelliteContext: (bounds) => {
       const params = new URLSearchParams({
@@ -179,8 +209,11 @@ export function createApiClient(baseUrl: string): ApiClient {
     getStreamStatus: () =>
       getJson("/stream/status", (value) => aisStreamStatusSchema.parse(value)),
     getVesselIntel: (vesselId) =>
-      postJson(`/vessels/${encodeURIComponent(vesselId)}/intel`, {}, (value) =>
-        vesselIntelResponseSchema.parse(value)
+      postJson(
+        `/vessels/${encodeURIComponent(vesselId)}/intel`,
+        {},
+        (value) => vesselIntelResponseSchema.parse(value),
+        { auth: true }
       ),
     getVessels: () =>
       getJson("/vessels", (value) => vesselSnapshotResponseSchema.parse(value))
@@ -188,3 +221,15 @@ export function createApiClient(baseUrl: string): ApiClient {
 }
 
 export const apiClient = createApiClient(env.apiBaseUrl);
+
+function jsonHeaders(
+  options: RequestOptions = {},
+  extra: Record<string, string> = {}
+): Record<string, string> {
+  const token = options.auth ? getAnalysisAccessToken() : "";
+  return {
+    accept: "application/json",
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}

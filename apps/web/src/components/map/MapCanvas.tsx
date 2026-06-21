@@ -9,6 +9,7 @@ import { applyProjection } from "./mapCanvasUtils";
 import {
   type MapCanvasSyncState,
   syncAirportContextLayer,
+  syncConflictContextLayer,
   syncFireAnomalyLayer,
   syncIntelligenceLayers,
   syncMapCanvasState,
@@ -17,6 +18,7 @@ import {
 import { registerMapInteractionHandlers } from "./mapInteractionHandlers";
 import { MapControls } from "./MapControls";
 import { useAirportContextData } from "./useAirportContextData";
+import { useConflictContextData } from "./useConflictContextData";
 import { useFireAnomalyData } from "./useFireAnomalyData";
 import { useMapTrafficData } from "./useMapTrafficData";
 
@@ -51,6 +53,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
   const projection = useMapStore((state) => state.projection);
   const intelligenceLayers = useMapStore((state) => state.intelligenceLayers);
   const airportContextData = useAirportContextData();
+  const conflictContextData = useConflictContextData();
   const fireAnomalyData = useFireAnomalyData();
   const focusRequest = useMapStore((state) => state.focusRequest);
   const trackedTarget = useMapStore((state) => state.trackedTarget);
@@ -67,6 +70,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftTrackMarkerData,
     airportContextData,
     areaOverlay,
+    conflictContextData,
     fireAnomalyData,
     intelligenceLayers,
     pointData,
@@ -93,6 +97,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftTrackMarkerData,
     airportContextData,
     areaOverlay,
+    conflictContextData,
     fireAnomalyData,
     intelligenceLayers,
     pointData,
@@ -170,6 +175,15 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
 
     syncAirportContextLayer(map, latestMapStateRef.current);
   }, [airportContextData, intelligenceLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) {
+      return;
+    }
+
+    syncConflictContextLayer(map, latestMapStateRef.current);
+  }, [conflictContextData, intelligenceLayers]);
 
   useEffect(() => {
     const map = mapRef.current;

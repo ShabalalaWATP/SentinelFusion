@@ -15,6 +15,7 @@ export type MapDomainFilter = "all" | "vessels" | "aircraft";
 export type IntelligenceLayerId =
   | "airports"
   | "chokepoints"
+  | "conflict-events"
   | "fire-anomalies"
   | "maritime-zones"
   | "ports"
@@ -91,6 +92,7 @@ export const useMapStore = create<MapState>((set) => ({
   intelligenceLayers: {
     airports: false,
     chokepoints: true,
+    "conflict-events": false,
     "fire-anomalies": false,
     "maritime-zones": false,
     ports: true,

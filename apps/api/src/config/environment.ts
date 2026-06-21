@@ -93,6 +93,16 @@ const rawConfigSchema = z.object({
   SANCTIONS_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
   SANCTIONS_CONTEXT_PROVIDER: z.enum(["opensanctions", "custom"]).default("opensanctions"),
   SANCTIONS_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(10),
+  CONFLICT_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("live"),
+  CONFLICT_CONTEXT_PROVIDER: z.enum(["acled"]).default("acled"),
+  CONFLICT_CONTEXT_LOOKBACK_DAYS: z.coerce.number().int().min(1).max(90).default(14),
+  CONFLICT_CONTEXT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  CONFLICT_CONTEXT_CACHE_SECONDS: z.coerce.number().int().min(0).default(900),
+  CONFLICT_CONTEXT_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).default(200),
+  CONFLICT_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(200).default(50),
+  ACLED_ACCESS_TOKEN: optionalNonEmptyString,
+  ACLED_USERNAME: optionalNonEmptyString,
+  ACLED_PASSWORD: optionalNonEmptyString,
   SATELLITE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("live"),
   SATELLITE_CONTEXT_PROVIDER: z.enum(["nasa-gibs", "custom"]).default("nasa-gibs"),
   SATELLITE_CONTEXT_LAYER: z.string().min(1).max(120).default("VIIRS_SNPP_CorrectedReflectance_TrueColor"),
@@ -164,6 +174,16 @@ export type AppConfig = {
   sanctionsContextMode: "off" | "mock" | "live";
   sanctionsContextProvider: "opensanctions" | "custom";
   sanctionsContextMaxResults: number;
+  conflictContextMode?: "off" | "mock" | "live";
+  conflictContextProvider?: "acled";
+  conflictContextLookbackDays?: number;
+  conflictContextTimeoutMs?: number;
+  conflictContextCacheSeconds?: number;
+  conflictContextCacheMaxEntries?: number;
+  conflictContextMaxResults?: number;
+  acledAccessToken?: string;
+  acledUsername?: string;
+  acledPassword?: string;
   satelliteContextMode: "off" | "mock" | "live";
   satelliteContextProvider: "nasa-gibs" | "custom";
   satelliteContextLayer: string;
@@ -224,6 +244,16 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     }
   }
 
+  if (
+    parsed.CONFLICT_CONTEXT_MODE === "live" &&
+    (parsed.ACLED_ACCESS_TOKEN || parsed.ACLED_USERNAME || parsed.ACLED_PASSWORD) &&
+    !parsed.ANALYSIS_API_TOKEN
+  ) {
+    throw new Error(
+      "ANALYSIS_API_TOKEN is required when CONFLICT_CONTEXT_MODE=live uses ACLED credentials."
+    );
+  }
+
   const config: AppConfig = {
     nodeEnv: parsed.NODE_ENV,
     host: parsed.HOST,
@@ -269,6 +299,13 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     sanctionsContextMode: parsed.SANCTIONS_CONTEXT_MODE,
     sanctionsContextProvider: parsed.SANCTIONS_CONTEXT_PROVIDER,
     sanctionsContextMaxResults: parsed.SANCTIONS_CONTEXT_MAX_RESULTS,
+    conflictContextMode: parsed.CONFLICT_CONTEXT_MODE,
+    conflictContextProvider: parsed.CONFLICT_CONTEXT_PROVIDER,
+    conflictContextLookbackDays: parsed.CONFLICT_CONTEXT_LOOKBACK_DAYS,
+    conflictContextTimeoutMs: parsed.CONFLICT_CONTEXT_TIMEOUT_MS,
+    conflictContextCacheSeconds: parsed.CONFLICT_CONTEXT_CACHE_SECONDS,
+    conflictContextCacheMaxEntries: parsed.CONFLICT_CONTEXT_CACHE_MAX_ENTRIES,
+    conflictContextMaxResults: parsed.CONFLICT_CONTEXT_MAX_RESULTS,
     satelliteContextMode: parsed.SATELLITE_CONTEXT_MODE,
     satelliteContextProvider: parsed.SATELLITE_CONTEXT_PROVIDER,
     satelliteContextLayer: parsed.SATELLITE_CONTEXT_LAYER,
@@ -308,6 +345,18 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
 
   if (parsed.FIRMS_MAP_KEY) {
     config.firmsMapKey = parsed.FIRMS_MAP_KEY;
+  }
+
+  if (parsed.ACLED_ACCESS_TOKEN) {
+    config.acledAccessToken = parsed.ACLED_ACCESS_TOKEN;
+  }
+
+  if (parsed.ACLED_USERNAME) {
+    config.acledUsername = parsed.ACLED_USERNAME;
+  }
+
+  if (parsed.ACLED_PASSWORD) {
+    config.acledPassword = parsed.ACLED_PASSWORD;
   }
 
   if (parsed.ANALYSIS_API_TOKEN) {

@@ -191,6 +191,40 @@ describe("AISstream parsing", () => {
     });
   });
 
+  it("requires an analysis token when live conflict context has ACLED credentials", () => {
+    expect(() =>
+      parseAppConfig({
+        AIS_MODE: "mock",
+        ANALYSIS_MODE: "mock",
+        CONFLICT_CONTEXT_MODE: "live",
+        ACLED_ACCESS_TOKEN: "test-acled-token"
+      } as NodeJS.ProcessEnv)
+    ).toThrow("ANALYSIS_API_TOKEN is required when CONFLICT_CONTEXT_MODE=live");
+
+    expect(() =>
+      parseAppConfig({
+        AIS_MODE: "mock",
+        ANALYSIS_MODE: "mock",
+        CONFLICT_CONTEXT_MODE: "live",
+        ACLED_USERNAME: "test-user",
+        ACLED_PASSWORD: "test-password"
+      } as NodeJS.ProcessEnv)
+    ).toThrow("ANALYSIS_API_TOKEN is required when CONFLICT_CONTEXT_MODE=live");
+
+    expect(
+      parseAppConfig({
+        AIS_MODE: "mock",
+        ANALYSIS_MODE: "mock",
+        CONFLICT_CONTEXT_MODE: "live",
+        ACLED_ACCESS_TOKEN: "test-acled-token",
+        ANALYSIS_API_TOKEN: "0123456789abcdef"
+      } as NodeJS.ProcessEnv)
+    ).toMatchObject({
+      acledAccessToken: "test-acled-token",
+      analysisApiToken: "0123456789abcdef"
+    });
+  });
+
   it("rejects blanket trust for spoofable proxy headers", () => {
     expect(() =>
       parseAppConfig({

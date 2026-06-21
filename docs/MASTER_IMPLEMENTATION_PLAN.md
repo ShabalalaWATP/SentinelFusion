@@ -28,6 +28,7 @@ Implemented:
 - Server-side filed-route provider contract for selected aircraft, with server-resolved aircraft lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, and a collapsible aircraft panel that separates filed/planned route data from observed tracks.
 - Server-side sanctions and ownership screening provider contract for selected vessels, with server-resolved vessel lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, false-positive warnings, source-link safety, and a collapsible vessel panel that presents matches as review leads.
 - Server-side NASA GIBS satellite snapshot context for analysed areas, with strict bounds validation, fixed-host WMS URL construction, typed `ok`/`not_configured`/`error` states, and a collapsible area panel with image, source, date, layer, and limitations.
+- Server-side ACLED conflict/protest context for analysed areas, with API-only credentials, OAuth token support, strict bounds validation, capped provider responses, typed `ok`/`not_configured`/`error` states, a collapsible area panel, and a toggleable conflict-events map overlay.
 - Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
 
 Still planned:
@@ -36,7 +37,7 @@ Still planned:
 - Credentialed airspace notice adapters when authorised FAA/SWIM or licensed provider access is available.
 - Credentialed sanctions and ownership adapters when licensed OpenSanctions or custom provider access is available.
 - Higher-resolution satellite imagery adapters when Sentinel Hub, commercial SAR, or equivalent provider access is available.
-- Server-side provider aggregation for future OSINT providers and persisted domain defaults.
+- Server-side provider aggregation for future OSINT providers, persisted domain defaults, and optional higher-volume conflict/news providers where licensing allows.
 
 ## Provider Decision
 
@@ -393,4 +394,4 @@ The flight-tracking expansion is complete only when:
 
 ## Current Next Step
 
-Implement the next OSINT provider slice: conflict and protest overlays with source/date/confidence/limitations and a clear not-configured state where provider access is unavailable. Domain defaults and mobile layout checks remain as Stage 4.7 polish.
+Select the next high-value improvement goal or implement credentialed provider adapters where authorised credentials are available. Domain defaults and mobile layout checks remain as Stage 4.7 polish.

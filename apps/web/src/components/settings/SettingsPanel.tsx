@@ -1,3 +1,4 @@
+import { AnalysisAccessTokenPanel } from "./AnalysisAccessTokenPanel";
 import { FeedConfidenceControls } from "./FeedConfidenceControls";
 import { ProviderStatusCard, type ProviderStatusView } from "./ProviderStatusCard";
 import { useAircraftStore } from "../../stores/aircraftStore";
@@ -29,6 +30,7 @@ export function SettingsPanel() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
         <div className="space-y-3">
+          <AnalysisAccessTokenPanel />
           <FeedConfidenceControls />
           <ProviderStatusCard
             status={toSeaStatusView(

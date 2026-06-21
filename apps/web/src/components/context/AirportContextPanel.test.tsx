@@ -107,6 +107,7 @@ describe("AirportContextPanel", () => {
       intelligenceLayers: {
         airports: false,
         chokepoints: true,
+        "conflict-events": false,
         "fire-anomalies": false,
         "maritime-zones": false,
         ports: true,

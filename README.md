@@ -56,8 +56,10 @@ The app is live-first. On normal startup the API expects live AISstream ingestio
 - `SATELLITE_CONTEXT_MODE=live` uses public NASA GIBS WMS imagery through API-built fixed-host snapshot URLs. `off` and explicit `mock` modes remain available for deployment control and offline UI development.
 - `AIRPORT_CONTEXT_MODE=live` uses public OurAirports airport/runway CSV data through the API. It needs no browser key and no `VITE_` variable.
 - `AIRSPACE_CONTEXT_MODE=off` is the default because live NOTAM/TFR and restricted-airspace access needs an authorised or licensed provider. `mock` is available for offline UI development and is labelled as mock.
+- `CONFLICT_CONTEXT_MODE=live` uses ACLED when API-side `ACLED_ACCESS_TOKEN` or `ACLED_USERNAME` and `ACLED_PASSWORD` are configured. Without ACLED access the app returns a clear provider-not-configured state. If ACLED credentials are configured, API startup also requires `ANALYSIS_API_TOKEN` so unauthenticated callers cannot spend provider credentials. ACLED credentials are API-only and must never use a `VITE_` prefix.
 - `MARINE_WEATHER_MODE=live` uses Open-Meteo through the API. `FIRMS_MODE=live` requires `FIRMS_MAP_KEY` on the API server only.
-- `ANALYSIS_API_TOKEN` is required for live analysis unless `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is set for local development. If a token is set, `/analysis`, vessel intel enrichment, aircraft intel enrichment, and vessel sanctions screening require `Authorization: Bearer <token>` or `x-analysis-token`. Do not put this token in a `VITE_` variable.
+- `ANALYSIS_API_TOKEN` is required for live analysis unless `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is set for local development. If a token is set, `/analysis`, vessel intel enrichment, aircraft intel enrichment, vessel sanctions screening, and conflict/protest context require `Authorization: Bearer <token>` or `x-analysis-token`. Do not put this token in a `VITE_` variable.
+- The web Settings panel has a session-only protected API token field. Paste the same `ANALYSIS_API_TOKEN` there when using protected AI, web-intel, sanctions, or ACLED conflict/protest routes from the browser.
 - `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is for local loopback development only. Production live analysis always requires `ANALYSIS_API_TOKEN`.
 - `TRUST_PROXY` defaults to `false`. Use a hop count such as `1` or trusted proxy addresses/CIDRs only when the API is behind a reverse proxy that overwrites forwarded client headers. Blanket `TRUST_PROXY=true` is rejected.
 
@@ -87,7 +89,7 @@ See `docs/SECURITY_MODEL.md` for the full model.
 
 ## Flight Tracking Expansion
 
-The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, combined sea/air military intel, and API-owned OSINT context for marine weather, active fire, airports/runways, airspace notice provider status, filed-route provider status, vessel sanctions/ownership screening provider status, and NASA GIBS satellite snapshots. Route-age polish and credentialed enrichment providers remain planned.
+The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, combined sea/air military intel, and API-owned OSINT context for marine weather, active fire, airports/runways, airspace notice provider status, filed-route provider status, vessel sanctions/ownership screening provider status, NASA GIBS satellite snapshots, and ACLED-backed conflict/protest area context. Credentialed enrichment providers for filed routes, airspace notices, sanctions, and higher-resolution imagery remain planned.
 
 ## Agentic Upgrade Framework
 
