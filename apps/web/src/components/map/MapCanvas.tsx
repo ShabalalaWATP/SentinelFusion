@@ -5,15 +5,18 @@ import { useAircraftStore } from "../../stores/aircraftStore";
 import { useMapStore } from "../../stores/mapStore";
 import { useVesselStore } from "../../stores/vesselStore";
 import { fitMapToArea, updateAreaSource } from "./areaOverlay";
-import { applyProjection, isMeaningfulBounds, toBounds } from "./mapCanvasUtils";
+import { applyProjection } from "./mapCanvasUtils";
 import {
   type MapCanvasSyncState,
+  syncAirportContextLayer,
   syncFireAnomalyLayer,
   syncIntelligenceLayers,
   syncMapCanvasState,
   syncTrafficSources
 } from "./mapCanvasSync";
+import { registerMapInteractionHandlers } from "./mapInteractionHandlers";
 import { MapControls } from "./MapControls";
+import { useAirportContextData } from "./useAirportContextData";
 import { useFireAnomalyData } from "./useFireAnomalyData";
 import { useMapTrafficData } from "./useMapTrafficData";
 
@@ -47,6 +50,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
   const initialStyleIdRef = useRef(styleId);
   const projection = useMapStore((state) => state.projection);
   const intelligenceLayers = useMapStore((state) => state.intelligenceLayers);
+  const airportContextData = useAirportContextData();
   const fireAnomalyData = useFireAnomalyData();
   const focusRequest = useMapStore((state) => state.focusRequest);
   const trackedTarget = useMapStore((state) => state.trackedTarget);
@@ -61,6 +65,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftPointData,
     aircraftTrackData,
     aircraftTrackMarkerData,
+    airportContextData,
     areaOverlay,
     fireAnomalyData,
     intelligenceLayers,
@@ -86,6 +91,7 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
     aircraftPointData,
     aircraftTrackData,
     aircraftTrackMarkerData,
+    airportContextData,
     areaOverlay,
     fireAnomalyData,
     intelligenceLayers,
@@ -117,86 +123,15 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
       syncMapCanvasState(map, latestMapStateRef.current);
     });
 
-    map.on("click", "vessel-points", (event) => {
-      if (isAreaDrawingRef.current) {
-        return;
-      }
-
-      const id = event.features?.[0]?.properties?.id;
-      if (typeof id === "string") {
-        selectVesselRef.current(id);
-        selectAircraftRef.current(null);
-        startTrackingVesselRef.current(
-          { id, longitude: event.lngLat.lng, latitude: event.lngLat.lat },
-          { follow: false }
-        );
-      }
-    });
-
-    map.on("click", "aircraft-points", (event) => {
-      if (isAreaDrawingRef.current) {
-        return;
-      }
-
-      const id = event.features?.[0]?.properties?.id;
-      if (typeof id === "string") {
-        selectAircraftRef.current(id);
-        selectVesselRef.current(null);
-        startTrackingAircraftRef.current(
-          { id, longitude: event.lngLat.lng, latitude: event.lngLat.lat },
-          { follow: false }
-        );
-      }
-    });
-
-    map.on("mousedown", (event) => {
-      if (!isAreaDrawingRef.current || event.originalEvent.button !== 0) {
-        return;
-      }
-
-      event.preventDefault();
-      drawStartRef.current = event.lngLat;
-      map.dragPan.disable();
-      map.getCanvas().style.cursor = "crosshair";
-    });
-
-    map.on("mousemove", (event) => {
-      if (!drawStartRef.current || !isAreaDrawingRef.current) {
-        return;
-      }
-
-      const bounds = toBounds(drawStartRef.current, event.lngLat);
-      if (isMeaningfulBounds(bounds)) {
-        updateAreaDraftRef.current({ bounds });
-      }
-    });
-
-    map.on("mouseup", (event) => {
-      if (!drawStartRef.current || !isAreaDrawingRef.current) {
-        return;
-      }
-
-      const bounds = toBounds(drawStartRef.current, event.lngLat);
-      drawStartRef.current = null;
-      map.dragPan.enable();
-      map.getCanvas().style.cursor = "";
-
-      if (isMeaningfulBounds(bounds)) {
-        completeAreaDrawingRef.current({ bounds });
-      }
-    });
-
-    map.on("mouseenter", "vessel-points", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "vessel-points", () => {
-      map.getCanvas().style.cursor = "";
-    });
-    map.on("mouseenter", "aircraft-points", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "aircraft-points", () => {
-      map.getCanvas().style.cursor = "";
+    registerMapInteractionHandlers(map, {
+      completeAreaDrawingRef,
+      drawStartRef,
+      isAreaDrawingRef,
+      selectAircraftRef,
+      selectVesselRef,
+      startTrackingAircraftRef,
+      startTrackingVesselRef,
+      updateAreaDraftRef
     });
 
     return () => {
@@ -226,6 +161,15 @@ export function MapCanvas({ showRoutes }: MapCanvasProps) {
 
     syncIntelligenceLayers(map, latestMapStateRef.current);
   }, [intelligenceLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) {
+      return;
+    }
+
+    syncAirportContextLayer(map, latestMapStateRef.current);
+  }, [airportContextData, intelligenceLayers]);
 
   useEffect(() => {
     const map = mapRef.current;

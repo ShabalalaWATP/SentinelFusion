@@ -4,6 +4,7 @@ import {
   aircraftSnapshotResponseSchema,
   analysisRequestSchema,
   analysisSummarySchema,
+  airportContextResponseSchema,
   fireContextResponseSchema,
   flightStreamStatusSchema,
   healthResponseSchema,
@@ -15,6 +16,7 @@ import {
   type AircraftIntelResponse,
   type AnalysisRequest,
   type AnalysisSummary,
+  type AirportContextResponse,
   type FireContextResponse,
   type FlightStreamStatus,
   type HealthResponse,
@@ -28,7 +30,9 @@ import { env } from "../config/env";
 export type ApiClient = {
   analyse(request: AnalysisRequest): Promise<AnalysisSummary>;
   getAircraft(): Promise<AircraftSnapshotResponse>;
+  getAircraftAirportContext(aircraftId: string): Promise<AirportContextResponse>;
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
+  getAirportContext(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
   getFireContext(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
@@ -81,10 +85,26 @@ export function createApiClient(baseUrl: string): ApiClient {
       ),
     getAircraft: () =>
       getJson("/aircraft", (value) => aircraftSnapshotResponseSchema.parse(value)),
+    getAircraftAirportContext: (aircraftId) =>
+      getJson(`/aircraft/${encodeURIComponent(aircraftId)}/airport-context`, (value) =>
+        airportContextResponseSchema.parse(value)
+      ),
     getAircraftIntel: (aircraftId) =>
       postJson(`/aircraft/${encodeURIComponent(aircraftId)}/intel`, {}, (value) =>
         aircraftIntelResponseSchema.parse(value)
       ),
+    getAirportContext: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(`/context/airports?${params.toString()}`, (value) =>
+        airportContextResponseSchema.parse(value)
+      );
+    },
     getFireContext: (bounds) => {
       const params = new URLSearchParams({
         south: String(bounds.south),

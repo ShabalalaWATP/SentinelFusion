@@ -3,6 +3,7 @@ import type {
   AisStreamState,
   Aircraft,
   AircraftIntelResponse,
+  AirportContextResponse,
   AircraftMetrics,
   AircraftStreamEnvelope,
   AnalysisAircraftIntelContext,
@@ -187,6 +188,17 @@ export interface IVesselIntelService {
 
 export interface IAircraftIntelService {
   enrich(aircraft: Aircraft): Promise<AircraftIntelResponse>;
+}
+
+export interface IAirportContextService {
+  getAreaAirports(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
+  getNearbyAirports(focus: {
+    latitude: number;
+    longitude: number;
+    aircraftId?: string;
+    label?: string;
+    radiusKm?: number;
+  }): Promise<AirportContextResponse>;
 }
 
 export interface IMarineWeatherService {

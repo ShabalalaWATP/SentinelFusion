@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { fireContextResponseSchema, marineWeatherResponseSchema } from "../src";
+import {
+  airportContextResponseSchema,
+  fireContextResponseSchema,
+  marineWeatherResponseSchema
+} from "../src";
 
 const now = new Date("2026-06-20T12:00:00.000Z").toISOString();
 
@@ -114,5 +118,66 @@ describe("context schemas", () => {
 
     expect(parsed.detections[0]?.confidence).toBe("high");
     expect(parsed.summary.maxFireRadiativePowerMw).toBe(18.6);
+  });
+
+  it("validates airport and runway context responses", () => {
+    const parsed = airportContextResponseSchema.parse({
+      status: "ok",
+      mode: "live",
+      source: {
+        title: "OurAirports open airport data",
+        url: "https://ourairports.com/data/",
+        attribution: "Airport and runway open data by OurAirports"
+      },
+      generatedAt: now,
+      cached: false,
+      focus: {
+        latitude: 50.82,
+        longitude: -1.21,
+        label: "RFR7182",
+        aircraftId: "icao24-407abc"
+      },
+      airports: [
+        {
+          id: "2538",
+          ident: "EGHF",
+          type: "small_airport",
+          name: "Lee-on-Solent Airport",
+          latitude: 50.815,
+          longitude: -1.207,
+          elevationFt: 32,
+          isoCountry: "GB",
+          municipality: "Lee-on-Solent",
+          scheduledService: false,
+          gpsCode: "EGHF",
+          sourceUrl: "https://ourairports.com/airports/EGHF/",
+          distanceKm: 0.6,
+          bearingDegrees: 160,
+          runways: [
+            {
+              id: "2",
+              lengthFt: 3480,
+              widthFt: 100,
+              surface: "ASP",
+              lighted: false,
+              closed: false,
+              lowEnd: { ident: "05", headingDegrees: 45 },
+              highEnd: { ident: "23", headingDegrees: 225 }
+            }
+          ]
+        }
+      ],
+      summary: {
+        count: 1,
+        scheduledServiceCount: 0,
+        runwayCount: 1,
+        nearestDistanceKm: 0.6,
+        longestRunwayFt: 3480
+      },
+      limitations: ["OurAirports is public-domain community data."]
+    });
+
+    expect(parsed.airports[0]?.ident).toBe("EGHF");
+    expect(parsed.summary.longestRunwayFt).toBe(3480);
   });
 });

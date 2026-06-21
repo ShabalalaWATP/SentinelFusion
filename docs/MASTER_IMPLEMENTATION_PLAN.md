@@ -23,12 +23,13 @@ Implemented:
 - Settings panel for sea and air provider status, feed confidence controls, last message age, latency, errors and reconnect counts without exposing credentials.
 - Server-side Open-Meteo marine weather context for analysed areas, with shared typed contracts, bounded cache, `ok`/`not_configured`/`error` states, and a collapsible area-result panel.
 - Server-side NASA FIRMS active-fire context for analysed areas, with `FIRMS_MAP_KEY` held in the API, strict bounds validation, antimeridian-aware provider requests, capped detections, `ok`/`not_configured`/`error` states, and a toggleable fire-points map overlay.
+- Server-side OurAirports airport/runway context for analysed areas and selected aircraft, with fixed open-data CSV URLs, bounded parsing, server-resolved selected-aircraft position lookups, typed `ok`/`not_configured`/`error` states, and collapsible area/aircraft panels.
 - Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
 
 Still planned:
 
 - Optional filed-route enrichment where licensed provider data supports it.
-- Server-side provider aggregation for future OSINT providers, airport/runway enrichment, and persisted domain defaults.
+- Server-side provider aggregation for future OSINT providers and persisted domain defaults.
 
 ## Provider Decision
 
@@ -385,4 +386,4 @@ The flight-tracking expansion is complete only when:
 
 ## Current Next Step
 
-Implement the next OSINT provider slice: airport/runway enrichment with a server-owned open-data adapter. Domain defaults and mobile layout checks remain as Stage 4.7 polish.
+Implement the next OSINT provider slice: NOTAM/TFR airspace provider contract with a not-configured state until authorised provider access is available. Domain defaults and mobile layout checks remain as Stage 4.7 polish.

@@ -4,6 +4,7 @@ import type { Aircraft, Vessel, VesselMetrics } from "@aisstream/shared";
 import { questionForAnalysisMode } from "../analysis/analysisDefaults";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useAircraftIntelStore } from "../../stores/aircraftIntelStore";
+import { useAirportContextStore } from "../../stores/airportContextStore";
 import { useFeedFilterStore } from "../../stores/feedFilterStore";
 import { useAircraftStore } from "../../stores/aircraftStore";
 import { useMapStore } from "../../stores/mapStore";
@@ -88,6 +89,16 @@ function resetStores(): void {
   });
   useAnalysisStore.getState().reset();
   useFeedFilterStore.getState().resetSettings();
+  useAirportContextStore.setState({
+    areaStatus: "idle",
+    areaResult: null,
+    areaError: null,
+    aircraftStatuses: {},
+    aircraftResults: {},
+    aircraftErrors: {},
+    refreshArea: async () => undefined,
+    refreshAircraft: async () => undefined
+  });
   useAircraftIntelStore.setState({ errors: {}, results: {}, statuses: {} });
   useVesselIntelStore.setState({ errors: {}, results: {}, statuses: {} });
 }

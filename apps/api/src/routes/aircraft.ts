@@ -4,12 +4,16 @@ import { z } from "zod";
 import type {
   IAircraftAnalyticsService,
   IAircraftIntelService,
-  IAircraftRepository
+  IAircraftRepository,
+  IAirportContextService
 } from "../domain/interfaces";
 import { isAuthorised } from "./auth";
 
 const aircraftParamsSchema = z.object({
   id: z.string().min(1).max(80)
+});
+const airportContextQuerySchema = z.object({
+  radiusKm: z.coerce.number().min(1).max(1000).optional()
 });
 
 type AircraftRouteDependencies = {
@@ -17,6 +21,7 @@ type AircraftRouteDependencies = {
   analytics: IAircraftAnalyticsService;
   getStreamStatus?: () => FlightStreamStatus;
   intelService?: IAircraftIntelService;
+  airportContextService?: IAirportContextService;
   analysisApiToken?: string;
 };
 
@@ -59,5 +64,34 @@ export async function registerAircraftRoutes(
     }
 
     return dependencies.intelService.enrich(aircraft);
+  });
+
+  app.get("/aircraft/:id/airport-context", async (request, reply) => {
+    if (!dependencies.airportContextService) {
+      return reply.code(503).send({ error: "Airport context service is unavailable." });
+    }
+
+    const parsed = aircraftParamsSchema.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Aircraft id is invalid." });
+    }
+
+    const query = airportContextQuerySchema.safeParse(request.query);
+    if (!query.success) {
+      return reply.code(400).send({ error: "Airport context query is invalid." });
+    }
+
+    const aircraft = dependencies.repository.getById(parsed.data.id);
+    if (!aircraft) {
+      return reply.code(404).send({ error: "Requested aircraft was not found." });
+    }
+
+    return dependencies.airportContextService.getNearbyAirports({
+      latitude: aircraft.latitude,
+      longitude: aircraft.longitude,
+      aircraftId: aircraft.id,
+      label: aircraft.callsign ?? aircraft.registration ?? aircraft.icao24.toUpperCase(),
+      ...(query.data.radiusKm === undefined ? {} : { radiusKm: query.data.radiusKm })
+    });
   });
 }

@@ -51,6 +51,8 @@ The app is live-first. On normal startup the API expects live AISstream ingestio
 - `FLIGHT_MODE=live` and `FLIGHT_PROVIDER=opensky` are the default aircraft settings. OpenSky can rate-limit public polling, in which case the app reports the live provider error rather than falling back to mock data. Set `FLIGHT_PROVIDER=adsbexchange` plus `FLIGHT_API_KEY` for ADS-B Exchange.
 - `FLIGHT_POLL_INTERVAL_MS` defaults to `90000` for OpenSky because a worldwide `/states/all` request consumes provider credits. The OpenSky client also honours provider retry-after headers when credits are exhausted.
 - Flight provider keys are API-only. Do not put `FLIGHT_API_KEY` or OpenSky secrets in `apps/web/.env` or any `VITE_` variable.
+- `AIRPORT_CONTEXT_MODE=live` uses public OurAirports airport/runway CSV data through the API. It needs no browser key and no `VITE_` variable.
+- `MARINE_WEATHER_MODE=live` uses Open-Meteo through the API. `FIRMS_MODE=live` requires `FIRMS_MAP_KEY` on the API server only.
 - `ANALYSIS_API_TOKEN` is required for live analysis unless `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is set for local development. If a token is set, `/analysis`, vessel intel enrichment, and aircraft intel enrichment require `Authorization: Bearer <token>` or `x-analysis-token`. Do not put this token in a `VITE_` variable.
 - `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is for local loopback development only. Production live analysis always requires `ANALYSIS_API_TOKEN`.
 - `TRUST_PROXY` defaults to `false`. Use a hop count such as `1` or trusted proxy addresses/CIDRs only when the API is behind a reverse proxy that overwrites forwarded client headers. Blanket `TRUST_PROXY=true` is rejected.
@@ -81,7 +83,7 @@ See `docs/SECURITY_MODEL.md` for the full model.
 
 ## Flight Tracking Expansion
 
-The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, and combined sea/air military intel. Source/stale-data filters, route-age polish, and provider settings remain planned.
+The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, combined sea/air military intel, and API-owned OSINT context for marine weather, active fire, and airports/runways. Source/stale-data filters, route-age polish, and provider settings remain planned.
 
 ## Agentic Upgrade Framework
 

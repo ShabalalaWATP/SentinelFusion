@@ -1,5 +1,10 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { ensureAircraftLayers, updateAircraftSources } from "./aircraftLayers";
+import {
+  ensureAirportContextLayers,
+  updateAirportContextSource,
+  updateAirportContextVisibility
+} from "./airportContextOverlay";
 import { updateAreaSource } from "./areaOverlay";
 import {
   ensureFireAnomalyLayers,
@@ -17,6 +22,7 @@ export type MapCanvasSyncState = {
   aircraftPointData: AircraftSourceArgs[1];
   aircraftTrackData: AircraftSourceArgs[2];
   aircraftTrackMarkerData: AircraftSourceArgs[3];
+  airportContextData: Parameters<typeof updateAirportContextSource>[1];
   areaOverlay: Parameters<typeof updateAreaSource>[1];
   fireAnomalyData: Parameters<typeof updateFireAnomalySource>[1];
   intelligenceLayers: Parameters<typeof updateIntelligenceLayerVisibility>[1];
@@ -29,9 +35,12 @@ export type MapCanvasSyncState = {
 export function syncMapCanvasState(map: MapLibreMap, state: MapCanvasSyncState): void {
   syncTrafficSources(map, state);
   ensureIntelligenceLayers(map);
+  ensureAirportContextLayers(map);
   ensureFireAnomalyLayers(map);
   updateAreaSource(map, state.areaOverlay);
   updateIntelligenceLayerVisibility(map, state.intelligenceLayers);
+  updateAirportContextSource(map, state.airportContextData);
+  updateAirportContextVisibility(map, state.intelligenceLayers.airports);
   updateFireAnomalySource(map, state.fireAnomalyData);
   updateFireAnomalyVisibility(map, state.intelligenceLayers["fire-anomalies"]);
   applyProjection(map, state.projection);
@@ -51,9 +60,17 @@ export function syncTrafficSources(map: MapLibreMap, state: MapCanvasSyncState):
 
 export function syncIntelligenceLayers(map: MapLibreMap, state: MapCanvasSyncState): void {
   ensureIntelligenceLayers(map);
+  ensureAirportContextLayers(map);
   ensureFireAnomalyLayers(map);
   updateIntelligenceLayerVisibility(map, state.intelligenceLayers);
+  updateAirportContextVisibility(map, state.intelligenceLayers.airports);
   updateFireAnomalyVisibility(map, state.intelligenceLayers["fire-anomalies"]);
+}
+
+export function syncAirportContextLayer(map: MapLibreMap, state: MapCanvasSyncState): void {
+  ensureAirportContextLayers(map);
+  updateAirportContextSource(map, state.airportContextData);
+  updateAirportContextVisibility(map, state.intelligenceLayers.airports);
 }
 
 export function syncFireAnomalyLayer(map: MapLibreMap, state: MapCanvasSyncState): void {

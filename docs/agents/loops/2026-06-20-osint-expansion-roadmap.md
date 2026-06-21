@@ -73,6 +73,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Browser verification: foundation slice
 - [x] Implementation: OSINT provider foundation and first no-key provider
 - [x] Implementation: NASA FIRMS active-fire provider slice
+- [x] Implementation: OurAirports airport/runway provider slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -179,6 +180,37 @@ Verification evidence:
 - Security review finding remediated: over-large unauthenticated FIRMS requests are rejected before provider access, provider cache keys are bucketed, in-flight requests are coalesced, provider response bytes and rows are capped, and CSV processing stops before unbounded parsing.
 - Code quality review findings remediated: limits are wired into route/service, stale fire points are scoped to the current area-analysis result through `useFireAnomalyData`, and `FIRMS_MODE=off` has distinct disabled-mode remediation text.
 - Focused cyber review result: no validated security issues remain for this FIRMS slice.
+
+## Airport/Runway Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `airportContextResponseSchema` and `AirportContextResponse` type with provider status, source attribution, analysed area or selected-aircraft focus, capped airports, capped runway summaries, nearest-distance metrics, scheduled-service counts, limitations, and safe public URL validation.
+- API-side `AirportContextService` using fixed OurAirports `airports.csv` and `runways.csv` URLs, live no-key defaults, explicit off/mock/live modes, selected-area size limits, server-resolved selected-aircraft focus through `/aircraft/:id/airport-context`, provider byte and row caps, capped runways per airport, request timeout, bounded dataset cache, and typed `ok`/`not_configured`/`error` result states.
+- `GET /context/airports` route for validated area or point context, plus selected-aircraft airport context resolved from server aircraft state rather than browser-supplied aircraft positions.
+- Web API client, `airportContextStore`, collapsible `AirportContextPanel`, area-context stack integration, and selected-aircraft drawer integration. The UI lists nearest airports/runways, shows attribution/limitations, refreshes on focus changes, and can enable the existing Airports map layer.
+- Environment example variables for `AIRPORT_CONTEXT_MODE`, timeout, cache TTL, max results, and max runways per airport. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- OurAirports live-source sanity check: fixed `airports.csv` and `runways.csv` URLs both returned HTTP 200 on HEAD requests.
+- `corepack pnpm --filter @aisstream/shared test -- context-schemas`: passed, shared schema tests now 21 tests.
+- `corepack pnpm --filter @aisstream/api typecheck`: passed after shared rebuild.
+- `corepack pnpm --filter @aisstream/api test -- airport-context-service airport-context-route aircraft-routes`: passed, targeted API run reported 79 tests.
+- `corepack pnpm --filter @aisstream/web typecheck`: passed.
+- `corepack pnpm --filter @aisstream/web test -- AirportContextPanel airportContextStore AnalysisResult VesselDrawer`: passed, targeted web run reported 104 tests.
+- Quality review findings remediated: enriched OurAirports results now feed a dynamic map source/layer, selected-aircraft airport refreshes key off the stable aircraft ID instead of live aircraft objects, and closed runways are excluded from summaries/display.
+- Security review finding remediated: OurAirports response byte caps are now enforced while streaming provider responses, with `reader.cancel()` called as soon as the cap is crossed before decoding or storing an over-limit chunk.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm test`: passed after streaming-cap remediation, full suite reported shared 21 tests, API 80 tests, and web 110 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight, and OpenSky key assignments: no matches.
+- File-size guard: touched airport/map files remain within the 350-line preference; only the pre-existing alert files remain above the threshold.
+- In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, console errors were empty, Map controls opened, and the `Airports` toggle changed `aria-pressed` from `false` to `true`. Screenshot capture succeeded.
+- Focused cyber review result after remediation: no validated security issues remain for this airport/runway slice.
 
 ## Risks And Blockers
 

@@ -72,6 +72,11 @@ const rawConfigSchema = z.object({
   FIRMS_CACHE_SECONDS: z.coerce.number().int().min(0).default(900),
   FIRMS_CACHE_MAX_ENTRIES: z.coerce.number().int().min(1).default(200),
   FIRMS_MAX_DETECTIONS: z.coerce.number().int().min(1).max(500).default(150),
+  AIRPORT_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("live"),
+  AIRPORT_CONTEXT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  AIRPORT_CONTEXT_CACHE_SECONDS: z.coerce.number().int().min(0).default(86400),
+  AIRPORT_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(8),
+  AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT: z.coerce.number().int().min(0).max(12).default(4),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -125,6 +130,11 @@ export type AppConfig = {
   firmsCacheSeconds: number;
   firmsCacheMaxEntries: number;
   firmsMaxDetections: number;
+  airportContextMode: "off" | "mock" | "live";
+  airportContextTimeoutMs: number;
+  airportContextCacheSeconds: number;
+  airportContextMaxResults: number;
+  airportContextMaxRunwaysPerAirport: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -214,6 +224,11 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     firmsCacheSeconds: parsed.FIRMS_CACHE_SECONDS,
     firmsCacheMaxEntries: parsed.FIRMS_CACHE_MAX_ENTRIES,
     firmsMaxDetections: parsed.FIRMS_MAX_DETECTIONS,
+    airportContextMode: parsed.AIRPORT_CONTEXT_MODE,
+    airportContextTimeoutMs: parsed.AIRPORT_CONTEXT_TIMEOUT_MS,
+    airportContextCacheSeconds: parsed.AIRPORT_CONTEXT_CACHE_SECONDS,
+    airportContextMaxResults: parsed.AIRPORT_CONTEXT_MAX_RESULTS,
+    airportContextMaxRunwaysPerAirport: parsed.AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,
