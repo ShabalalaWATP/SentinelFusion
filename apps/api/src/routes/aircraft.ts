@@ -5,7 +5,8 @@ import type {
   IAircraftAnalyticsService,
   IAircraftIntelService,
   IAircraftRepository,
-  IAirportContextService
+  IAirportContextService,
+  IFlightRouteContextService
 } from "../domain/interfaces";
 import { isAuthorised } from "./auth";
 
@@ -22,6 +23,7 @@ type AircraftRouteDependencies = {
   getStreamStatus?: () => FlightStreamStatus;
   intelService?: IAircraftIntelService;
   airportContextService?: IAirportContextService;
+  filedRouteContextService?: IFlightRouteContextService;
   analysisApiToken?: string;
 };
 
@@ -93,5 +95,23 @@ export async function registerAircraftRoutes(
       label: aircraft.callsign ?? aircraft.registration ?? aircraft.icao24.toUpperCase(),
       ...(query.data.radiusKm === undefined ? {} : { radiusKm: query.data.radiusKm })
     });
+  });
+
+  app.get("/aircraft/:id/filed-route", async (request, reply) => {
+    if (!dependencies.filedRouteContextService) {
+      return reply.code(503).send({ error: "Filed route context service is unavailable." });
+    }
+
+    const parsed = aircraftParamsSchema.safeParse(request.params);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Aircraft id is invalid." });
+    }
+
+    const aircraft = dependencies.repository.getById(parsed.data.id);
+    if (!aircraft) {
+      return reply.code(404).send({ error: "Requested aircraft was not found." });
+    }
+
+    return dependencies.filedRouteContextService.getFiledRoute(aircraft);
   });
 }

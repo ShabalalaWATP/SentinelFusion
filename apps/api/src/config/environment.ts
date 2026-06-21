@@ -79,6 +79,9 @@ const rawConfigSchema = z.object({
   AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT: z.coerce.number().int().min(0).max(12).default(4),
   AIRSPACE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
   AIRSPACE_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(100).default(25),
+  FLIGHT_ROUTE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
+  FLIGHT_ROUTE_CONTEXT_PROVIDER: z.enum(["flightaware", "fr24", "custom"]).default("flightaware"),
+  FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS: z.coerce.number().int().min(1).max(120).default(60),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -139,6 +142,9 @@ export type AppConfig = {
   airportContextMaxRunwaysPerAirport: number;
   airspaceContextMode: "off" | "mock" | "live";
   airspaceContextMaxResults: number;
+  flightRouteContextMode: "off" | "mock" | "live";
+  flightRouteContextProvider: "flightaware" | "fr24" | "custom";
+  flightRouteContextMaxWaypoints: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -235,6 +241,9 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     airportContextMaxRunwaysPerAirport: parsed.AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT,
     airspaceContextMode: parsed.AIRSPACE_CONTEXT_MODE,
     airspaceContextMaxResults: parsed.AIRSPACE_CONTEXT_MAX_RESULTS,
+    flightRouteContextMode: parsed.FLIGHT_ROUTE_CONTEXT_MODE,
+    flightRouteContextProvider: parsed.FLIGHT_ROUTE_CONTEXT_PROVIDER,
+    flightRouteContextMaxWaypoints: parsed.FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,

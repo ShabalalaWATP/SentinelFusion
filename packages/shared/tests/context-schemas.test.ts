@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   airspaceContextResponseSchema,
   airportContextResponseSchema,
+  filedRouteContextResponseSchema,
   fireContextResponseSchema,
   marineWeatherResponseSchema
 } from "../src";
@@ -217,5 +218,43 @@ describe("context schemas", () => {
 
     expect(parsed.notices[0]?.type).toBe("restricted_area");
     expect(parsed.summary.activeCount).toBe(1);
+  });
+
+  it("validates filed route context responses", () => {
+    const parsed = filedRouteContextResponseSchema.parse({
+      status: "ok",
+      mode: "mock",
+      provider: "mock",
+      source: {
+        title: "Mock filed route",
+        url: "https://www.flightaware.com/aeroapi/portal/documentation",
+        attribution: "Mock filed route context for local development"
+      },
+      generatedAt: now,
+      cached: false,
+      aircraft: {
+        aircraftId: "icao24-407abc",
+        icao24: "407abc",
+        callsign: "RFR7182"
+      },
+      route: {
+        callsign: "RFR7182",
+        originAirport: "EGLL",
+        destinationAirport: "EGJJ",
+        scheduledDeparture: now,
+        scheduledArrival: now,
+        routeText: "EGLL CPT SAM EGJJ",
+        waypoints: [
+          { sequence: 0, ident: "EGLL", latitude: 51.47, longitude: -0.45 },
+          { sequence: 1, ident: "CPT" }
+        ],
+        confidence: "low",
+        status: "planned"
+      },
+      limitations: ["Mock filed routes are not live flight-plan data."]
+    });
+
+    expect(parsed.route?.originAirport).toBe("EGLL");
+    expect(parsed.route?.waypoints).toHaveLength(2);
   });
 });

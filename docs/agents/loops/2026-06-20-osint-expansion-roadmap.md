@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, and airspace-contract slices implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Manual review complete for airspace contract slice after subagent disconnect |
-| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Manual review complete for airspace contract slice |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for airspace contract slice |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, and filed-route-contract slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Manual review complete for filed-route contract slice |
+| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Manual review complete for filed-route contract slice |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for filed-route contract slice |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Manual review complete for airspace contract slice after subagent disconnect |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through airspace contract slice |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Manual review complete for filed-route contract slice |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through filed-route contract slice |
 
 ## Stage Order
 
@@ -75,6 +75,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Implementation: NASA FIRMS active-fire provider slice
 - [x] Implementation: OurAirports airport/runway provider slice
 - [x] Implementation: NOTAM/TFR airspace provider-contract slice
+- [x] Implementation: filed-route provider-contract slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -88,7 +89,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | Use Open-Meteo for the first marine-weather implementation. | Research Agent, official docs | 8 | 3 | 4 | 8 | Adopted after foundation |
 | Use NASA FIRMS only with server-side `FIRMS_MAP_KEY` and not-configured UI. | Research Agent, official docs | 8 | 4 | 5 | 8 | Adopted after provider foundation |
 | Use OurAirports for low-risk airport/runway enrichment. | Research Agent, official docs | 7 | 2 | 4 | 8 | Adopted |
-| Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace provider contract implemented first |
+| Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace and filed-route provider contracts implemented first |
 | Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Adopt with safeguards |
 | Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Trial |
 | Start conflict/protest overlays with public GDELT/UCDP data, ACLED as configured provider. | Research Agent | 7 | 5 | 5 | 7 | Trial |
@@ -241,9 +242,37 @@ Verification evidence:
 - In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, no Vite error overlay was present, and fresh console error/warning logs after reload were empty.
 - Quality and cyber subagents disconnected before returning findings. Manual review found no validated security issue: the browser supplies only numeric bounds, the route validates shared bounds, over-large areas are rejected before provider access, no provider URL or key is accepted from the client, mock mode is explicit, and live mode does not scrape or claim live data.
 
+## Filed Route Contract Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `filedRouteContextResponseSchema` and `FiledRouteContextResponse` type with provider status, source attribution, selected-aircraft identity, optional filed route, schedule fields, capped waypoints, confidence, status, limitations, and optional error messaging.
+- API-side `FiledRouteContextService` with explicit `off`, `mock`, and `live` modes. Default and unimplemented live mode return a clear `not_configured` state until licensed FlightAware, Flightradar24, or equivalent filed-route provider access is configured.
+- `GET /aircraft/:id/filed-route` route resolved from server aircraft state. The browser supplies only an aircraft id, not route text, callsign claims, provider URLs, or credentials.
+- Web API client, `filedRouteContextStore`, and collapsible selected-aircraft `FiledRoutePanel`. The UI separates filed/planned route context from observed tracks and shows provider status, not-configured/error states, explicit mock-only routes when enabled, attribution, limitations, route text, schedule, and top waypoints.
+- Environment example variables for `FLIGHT_ROUTE_CONTEXT_MODE`, `FLIGHT_ROUTE_CONTEXT_PROVIDER`, and `FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS`. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm --filter @aisstream/shared test -- context-schemas`: passed, shared schema tests now 23 tests.
+- `corepack pnpm --filter @aisstream/api test -- filed-route-context-service aircraft-routes`: passed, targeted API run reported 90 tests.
+- `corepack pnpm --filter @aisstream/web test -- FiledRoutePanel filedRouteContextStore VesselDrawer`: passed, targeted web run reported 122 tests.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm typecheck`: passed.
+- `corepack pnpm test`: passed, full suite reported shared 23 tests, API 90 tests, and web 122 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed after normalising mechanically edited test fixtures back to LF-only content.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight, analysis-token, and generic API-key assignments: no matches.
+- File-size guard: touched filed-route files remain within the 350-line preference.
+- Local API smoke: `GET /aircraft/{id}/filed-route` for a current live aircraft returned `status:"not_configured"`, `mode:"off"`, `provider:"flightaware"`, no route object, and the expected licensed-provider limitation.
+- In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, no Vite error overlay was present, and fresh console error/warning logs after reload were empty.
+- Manual quality and cyber review found no validated security issue: the route resolves selected aircraft from API state, accepts no provider URL, accepts no browser-supplied route/callsign/position claims, adds no browser secrets, keeps mock mode explicit, and live mode does not scrape or claim live filed-route data.
+
 ## Risks And Blockers
 
-- Live NOTAM/TFR, filed routes, sanctions API screening, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
+- Live NOTAM/TFR adapters, live filed-route adapters, sanctions API screening, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
 - Sanctions and conflict/protest matches can create false positives. UI wording must make these triage signals, not legal determinations.
 - New map layers can overwhelm the dashboard. All overlays need toggles, caps, and conservative defaults.
 - Provider APIs must be protected against SSRF by fixed base URLs, bounded coordinates, and strict response validation.

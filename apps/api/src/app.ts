@@ -17,6 +17,7 @@ import type { AppConfig } from "./config/environment";
 import { createLoggerOptions } from "./config/logger";
 import { AirspaceContextService } from "./context/airspace-context-service";
 import { AirportContextService } from "./context/airport-context-service";
+import { FiledRouteContextService } from "./context/filed-route-context-service";
 import { FireContextService } from "./context/fire-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
 import type {
@@ -26,6 +27,7 @@ import type {
   IFlightTrackingClient,
   IAnalysisAgentService,
   IAircraftIntelService,
+  IFlightRouteContextService,
   IFireContextService,
   IMarineWeatherService,
   IVesselIntelService
@@ -59,6 +61,7 @@ type CreateAppOptions = {
   aircraftIntelService?: IAircraftIntelService;
   airspaceContextService?: IAirspaceContextService;
   airportContextService?: IAirportContextService;
+  filedRouteContextService?: IFlightRouteContextService;
   fireContextService?: IFireContextService;
   marineWeatherService?: IMarineWeatherService;
   vesselIntelService?: IVesselIntelService;
@@ -96,6 +99,8 @@ export async function createApp(
     options.airspaceContextService ?? createAirspaceContextService(config);
   const airportContextService =
     options.airportContextService ?? createAirportContextService(config);
+  const filedRouteContextService =
+    options.filedRouteContextService ?? createFiledRouteContextService(config);
   const fireContextService = options.fireContextService ?? createFireContextService(config);
   const marineWeatherService =
     options.marineWeatherService ?? createMarineWeatherService(config);
@@ -139,6 +144,7 @@ export async function createApp(
     getStreamStatus: () => flightStatus.snapshot(),
     intelService: aircraftIntelService,
     airportContextService,
+    filedRouteContextService,
     ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerAnalysisRoute(app, {
@@ -298,6 +304,10 @@ function createAircraftIntelService(config: AppConfig): IAircraftIntelService {
 
 function createAirportContextService(config: AppConfig): IAirportContextService {
   return new AirportContextService(config);
+}
+
+function createFiledRouteContextService(config: AppConfig): IFlightRouteContextService {
+  return new FiledRouteContextService(config);
 }
 
 function createAirspaceContextService(config: AppConfig): IAirspaceContextService {

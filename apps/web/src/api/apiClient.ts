@@ -6,6 +6,7 @@ import {
   analysisSummarySchema,
   airspaceContextResponseSchema,
   airportContextResponseSchema,
+  filedRouteContextResponseSchema,
   fireContextResponseSchema,
   flightStreamStatusSchema,
   healthResponseSchema,
@@ -19,6 +20,7 @@ import {
   type AnalysisSummary,
   type AirspaceContextResponse,
   type AirportContextResponse,
+  type FiledRouteContextResponse,
   type FireContextResponse,
   type FlightStreamStatus,
   type HealthResponse,
@@ -33,6 +35,7 @@ export type ApiClient = {
   analyse(request: AnalysisRequest): Promise<AnalysisSummary>;
   getAircraft(): Promise<AircraftSnapshotResponse>;
   getAircraftAirportContext(aircraftId: string): Promise<AirportContextResponse>;
+  getAircraftFiledRoute(aircraftId: string): Promise<FiledRouteContextResponse>;
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
   getAirspaceContext(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
   getAirportContext(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
@@ -91,6 +94,10 @@ export function createApiClient(baseUrl: string): ApiClient {
     getAircraftAirportContext: (aircraftId) =>
       getJson(`/aircraft/${encodeURIComponent(aircraftId)}/airport-context`, (value) =>
         airportContextResponseSchema.parse(value)
+      ),
+    getAircraftFiledRoute: (aircraftId) =>
+      getJson(`/aircraft/${encodeURIComponent(aircraftId)}/filed-route`, (value) =>
+        filedRouteContextResponseSchema.parse(value)
       ),
     getAircraftIntel: (aircraftId) =>
       postJson(`/aircraft/${encodeURIComponent(aircraftId)}/intel`, {}, (value) =>

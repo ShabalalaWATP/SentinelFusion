@@ -18,6 +18,7 @@ import type {
 import type {
   airspaceContextResponseSchema,
   airportContextResponseSchema,
+  filedRouteContextResponseSchema,
   fireContextResponseSchema,
   marineWeatherResponseSchema
 } from "./context-schemas";
@@ -84,5 +85,6 @@ export type VesselIntelProfile = z.infer<typeof vesselIntelProfileSchema>;
 export type VesselIntelResponse = z.infer<typeof vesselIntelResponseSchema>;
 export type AirspaceContextResponse = z.infer<typeof airspaceContextResponseSchema>;
 export type AirportContextResponse = z.infer<typeof airportContextResponseSchema>;
+export type FiledRouteContextResponse = z.infer<typeof filedRouteContextResponseSchema>;
 export type MarineWeatherResponse = z.infer<typeof marineWeatherResponseSchema>;
 export type FireContextResponse = z.infer<typeof fireContextResponseSchema>;

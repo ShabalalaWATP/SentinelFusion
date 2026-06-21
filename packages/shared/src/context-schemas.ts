@@ -224,3 +224,52 @@ export const airspaceContextResponseSchema = z.object({
   limitations: z.array(z.string().min(1).max(280)).min(1).max(6),
   error: z.string().min(1).max(260).optional()
 });
+
+export const filedRouteContextSourceSchema = z.object({
+  title: z.string().min(1).max(120),
+  url: publicHttpUrlSchema,
+  attribution: z.string().min(1).max(180)
+});
+
+export const filedRouteAircraftSchema = z.object({
+  aircraftId: z.string().min(1).max(80),
+  icao24: z.string().min(1).max(16),
+  callsign: z.string().min(1).max(32).optional(),
+  registration: z.string().min(1).max(32).optional()
+});
+
+export const filedRouteWaypointSchema = z.object({
+  sequence: z.number().int().nonnegative(),
+  ident: z.string().min(1).max(32),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional()
+});
+
+export const filedRoutePlanSchema = z.object({
+  providerFlightId: z.string().min(1).max(120).optional(),
+  callsign: z.string().min(1).max(32).optional(),
+  flightNumber: z.string().min(1).max(32).optional(),
+  originAirport: z.string().min(1).max(16).optional(),
+  destinationAirport: z.string().min(1).max(16).optional(),
+  scheduledDeparture: z.string().datetime().optional(),
+  scheduledArrival: z.string().datetime().optional(),
+  estimatedDeparture: z.string().datetime().optional(),
+  estimatedArrival: z.string().datetime().optional(),
+  routeText: z.string().min(1).max(1000).optional(),
+  waypoints: z.array(filedRouteWaypointSchema).max(120),
+  confidence: z.enum(["low", "medium", "high"]),
+  status: z.enum(["planned", "active", "completed", "diverted", "cancelled", "unknown"])
+});
+
+export const filedRouteContextResponseSchema = z.object({
+  status: z.enum(["ok", "not_configured", "error"]),
+  mode: z.enum(["off", "mock", "live"]),
+  provider: z.enum(["flightaware", "fr24", "custom", "mock"]),
+  source: filedRouteContextSourceSchema,
+  generatedAt: z.string().datetime(),
+  cached: z.boolean(),
+  aircraft: filedRouteAircraftSchema,
+  route: filedRoutePlanSchema.optional(),
+  limitations: z.array(z.string().min(1).max(280)).min(1).max(6),
+  error: z.string().min(1).max(260).optional()
+});

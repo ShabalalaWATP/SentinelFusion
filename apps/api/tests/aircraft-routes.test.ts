@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { Aircraft } from "@aisstream/shared";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
-import type { IAircraftIntelService } from "../src/domain/interfaces";
+import type { IAircraftIntelService, IFlightRouteContextService } from "../src/domain/interfaces";
 
 const config: AppConfig = {
   nodeEnv: "test",
@@ -44,6 +44,9 @@ const config: AppConfig = {
   airportContextMaxRunwaysPerAirport: 4,
   airspaceContextMode: "off",
   airspaceContextMaxResults: 25,
+  flightRouteContextMode: "off",
+  flightRouteContextProvider: "flightaware",
+  flightRouteContextMaxWaypoints: 60,
   analysisMode: "mock",
   openaiModel: "gpt-5.4-mini",
   openaiTimeoutMs: 20000,
@@ -218,6 +221,52 @@ describe("aircraft routes", () => {
     expect(response.json()).toMatchObject({
       aircraftId: aircraft.id,
       summary: "Aircraft web intel completed."
+    });
+  });
+
+  it("resolves selected-aircraft filed route context from the server repository", async () => {
+    const filedRouteContextService: IFlightRouteContextService = {
+      async getFiledRoute(target) {
+        return {
+          status: "not_configured",
+          mode: "off",
+          provider: "flightaware",
+          source: {
+            title: "FlightAware AeroAPI",
+            url: "https://www.flightaware.com/aeroapi/portal/documentation",
+            attribution: "Licensed provider required"
+          },
+          generatedAt: timestamp,
+          cached: false,
+          aircraft: {
+            aircraftId: target.id,
+            icao24: target.icao24,
+            callsign: target.callsign
+          },
+          limitations: ["Filed route provider is not configured."],
+          error: "Licensed filed-route provider is not configured."
+        };
+      }
+    };
+    app = await createApp(config, {
+      filedRouteContextService,
+      seedAircraft: [aircraft],
+      startStreams: false
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/aircraft/${aircraft.id}/filed-route`,
+      headers: { origin: "http://localhost:5173" }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      status: "not_configured",
+      aircraft: {
+        aircraftId: aircraft.id,
+        icao24: aircraft.icao24
+      }
     });
   });
 });

@@ -5,6 +5,7 @@ import type {
   AircraftIntelResponse,
   AirspaceContextResponse,
   AirportContextResponse,
+  FiledRouteContextResponse,
   AircraftMetrics,
   AircraftStreamEnvelope,
   AnalysisAircraftIntelContext,
@@ -204,6 +205,10 @@ export interface IAirportContextService {
 
 export interface IAirspaceContextService {
   getAreaAirspace(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
+}
+
+export interface IFlightRouteContextService {
+  getFiledRoute(aircraft: Aircraft): Promise<FiledRouteContextResponse>;
 }
 
 export interface IMarineWeatherService {

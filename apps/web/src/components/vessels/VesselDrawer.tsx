@@ -8,6 +8,7 @@ import {
   toSelectedAnalysisIntel
 } from "../../analysis/analysisIntelContext";
 import { AircraftList, AircraftSummary } from "../aircraft/AircraftDetails";
+import { FiledRoutePanel } from "../aircraft/FiledRoutePanel";
 import { AircraftIntelPanel } from "../aircraft/AircraftIntelPanel";
 import { AirportContextPanel } from "../context/AirportContextPanel";
 import {
@@ -194,6 +195,7 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
             <AircraftSummary aircraft={selectedAircraft} />
             <TrafficTrackingControls domain="aircraft" target={selectedAircraft} />
             <AirportContextPanel aircraft={selectedAircraft} />
+            <FiledRoutePanel aircraft={selectedAircraft} />
             <AircraftIntelPanel aircraft={selectedAircraft} />
             <AreaAnalysisForm
               analysis={analysis}
