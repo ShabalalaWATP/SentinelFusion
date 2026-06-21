@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, filed-route-contract, and sanctions-contract slices implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Subagent review complete for sanctions contract slice |
-| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | File-size finding remediated for sanctions contract slice |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for sanctions contract slice |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, filed-route-contract, sanctions-contract, and satellite-snapshot slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Satellite slice findings remediated |
+| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Satellite schemas split to keep touched shared files under the preferred line limit |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for satellite slice |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Subagent auth finding remediated for sanctions contract slice |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through sanctions contract slice |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Final satellite slice review found no validated issue |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through satellite snapshot slice |
 
 ## Stage Order
 
@@ -77,6 +77,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Implementation: NOTAM/TFR airspace provider-contract slice
 - [x] Implementation: filed-route provider-contract slice
 - [x] Implementation: sanctions and ownership provider-contract slice
+- [x] Implementation: satellite area snapshot slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -92,7 +93,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | Use OurAirports for low-risk airport/runway enrichment. | Research Agent, official docs | 7 | 2 | 4 | 8 | Adopted |
 | Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace and filed-route provider contracts implemented first |
 | Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Provider contract implemented with auth guard and review-lead UI |
-| Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Trial |
+| Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Implemented with fixed-host WMS snapshot URLs |
 | Start conflict/protest overlays with public GDELT/UCDP data, ACLED as configured provider. | Research Agent | 7 | 5 | 5 | 7 | Trial |
 
 ## Verification Gates
@@ -300,9 +301,39 @@ Verification evidence:
 - Security review finding remediated: the sanctions route now uses the existing enrichment auth guard when `ANALYSIS_API_TOKEN` is configured, and tests prove unauthorised calls do not invoke the screening service.
 - Code quality review finding remediated: the touched `environment.ts` file no longer exceeds the preferred 350-line ceiling after moving generic parsing helpers to `environment-parsers.ts`.
 
+## Satellite Snapshot Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `satelliteContextResponseSchema` and `SatelliteContextResponse` type with provider status, source attribution, analysed area, optional snapshot image URL, acquisition date, layer id, image format, dimensions, projection, limitations, and optional error messaging.
+- API-side `SatelliteContextService` with explicit `off`, `mock`, and `live` modes. Default live mode uses NASA GIBS public WMS imagery with no provider key. Custom provider mode returns `not_configured` until a licensed adapter exists.
+- `GET /context/satellite-snapshot` route with strict selected-area bounds validation, satellite-specific span/area limits, and no browser-supplied provider URL.
+- NASA GIBS image URLs are constructed by the API from a fixed `gibs.earthdata.nasa.gov` host, server-side layer/date/size settings, and validated area bounds. Antimeridian-crossing areas are rejected for this first WMS implementation instead of generating invalid BBOX values.
+- Web API client, `satelliteContextStore`, collapsible `SatelliteContextPanel`, and area-context stack integration. The UI shows the image, acquisition date, layer, attribution, limitations, refresh, provider states, typed area-limit errors, mock placeholders, and unsafe URL fallback without raw HTML.
+- Environment example variables for `SATELLITE_CONTEXT_MODE`, provider, layer, date offset, and image size. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm --filter @aisstream/shared test -- context-schemas`: passed, shared schema tests now 25 tests.
+- `corepack pnpm --filter @aisstream/api test -- satellite-context-service satellite-context-route`: passed, targeted API run reported 101 tests.
+- `corepack pnpm --filter @aisstream/web test -- SatelliteContextPanel satelliteContextStore`: passed, targeted web run reported 137 tests.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm typecheck`: passed after frontend and API wiring.
+- `corepack pnpm test`: passed, shared 25 tests, API 101 tests, web 137 tests.
+- `corepack pnpm build`: passed with the existing large Vite chunk warning.
+- `corepack pnpm audit --prod`: passed with no known vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight provider, analysis token, and generic key patterns found no matches.
+- Touched-file line check: all satellite-slice source and test files are under 350 lines. A broad source scan still shows two pre-existing oversized web files, `apps/web/src/alerts/alertModels.ts` and `apps/web/src/components/alerts/AlertsPanel.tsx`, which were not touched by this slice.
+- Local API smoke, normal area: `status=ok`, `mode=live`, `provider=nasa-gibs`, `layer=VIIRS_SNPP_CorrectedReflectance_TrueColor`, `date=2026-06-20`, `imageHost=gibs.earthdata.nasa.gov`.
+- Local API smoke, over-large area: typed `status=error`, `mode=live`, `provider=nasa-gibs`, `error=Satellite area is too tall for snapshot lookup. Maximum latitude span is 20 degrees.`
+- In-app Browser smoke: `http://localhost:5173/` rendered title `Sentinel Fusion`, one map canvas, no Vite overlay, no fresh warning/error console logs.
+- Code quality review findings remediated: mock mode no longer renders a remote NASA image, large-area errors stay in the typed satellite context contract, WMS URL tests assert exact fixed-host parameters, and satellite schemas moved to a dedicated shared module.
+- Security review: initial and final satellite-slice reviews found no validated issue. The final review covered SSRF/provider URL control, browser image/source URL handling, mock/off/live modes, error handling, bounds validation, secrets exposure, XSS, CORS/auth implications, and changed shared schema risk.
+
 ## Risks And Blockers
 
-- Live NOTAM/TFR adapters, live filed-route adapters, live sanctions screening adapters, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
+- Live NOTAM/TFR adapters, live filed-route adapters, live sanctions screening adapters, higher-resolution Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
 - Sanctions and conflict/protest matches can create false positives. UI wording must make these triage signals, not legal determinations.
 - New map layers can overwhelm the dashboard. All overlays need toggles, caps, and conservative defaults.
 - Provider APIs must be protected against SSRF by fixed base URLs, bounded coordinates, and strict response validation.

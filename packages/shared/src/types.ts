@@ -23,6 +23,7 @@ import type {
   marineWeatherResponseSchema,
   sanctionsScreeningResponseSchema
 } from "./context-schemas";
+import type { satelliteContextResponseSchema } from "./satellite-context-schemas";
 import type {
   aisRawMessageSchema,
   analysisAreaResultSchema,
@@ -90,3 +91,4 @@ export type FiledRouteContextResponse = z.infer<typeof filedRouteContextResponse
 export type MarineWeatherResponse = z.infer<typeof marineWeatherResponseSchema>;
 export type FireContextResponse = z.infer<typeof fireContextResponseSchema>;
 export type SanctionsScreeningResponse = z.infer<typeof sanctionsScreeningResponseSchema>;
+export type SatelliteContextResponse = z.infer<typeof satelliteContextResponseSchema>;

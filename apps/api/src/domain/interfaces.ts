@@ -15,6 +15,7 @@ import type {
   AnalysisVesselIntelContext,
   FireContextResponse,
   MarineWeatherResponse,
+  SatelliteContextResponse,
   TrafficAreaBounds,
   Vessel,
   VesselIntelResponse,
@@ -214,6 +215,10 @@ export interface IFlightRouteContextService {
 
 export interface ISanctionsScreeningService {
   screenVessel(vessel: Vessel): Promise<SanctionsScreeningResponse>;
+}
+
+export interface ISatelliteContextService {
+  getAreaSnapshot(bounds: TrafficAreaBounds): Promise<SatelliteContextResponse>;
 }
 
 export interface IMarineWeatherService {

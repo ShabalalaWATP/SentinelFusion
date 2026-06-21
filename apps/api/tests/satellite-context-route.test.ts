@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
-import type { IFireContextService } from "../src/domain/interfaces";
+import type { ISatelliteContextService } from "../src/domain/interfaces";
 
-const timestamp = "2026-06-21T10:00:00.000Z";
+const timestamp = "2026-06-21T12:00:00.000Z";
 const config: AppConfig = {
   nodeEnv: "test",
   host: "127.0.0.1",
@@ -70,100 +70,85 @@ afterEach(async () => {
   app = undefined;
 });
 
-describe("fire context route", () => {
-  it("returns fire context for valid area bounds", async () => {
-    const fireContextService: IFireContextService = {
-      async getAreaFires(bounds) {
+describe("satellite context route", () => {
+  it("returns satellite context for valid area bounds", async () => {
+    const satelliteContextService: ISatelliteContextService = {
+      async getAreaSnapshot(bounds) {
         return {
           status: "ok",
-          mode: "mock",
+          mode: "live",
+          provider: "nasa-gibs",
           source: {
-            title: "NASA FIRMS Active Fire",
-            url: "https://firms.modaps.eosdis.nasa.gov/api/area/",
-            attribution: "Active fire data by NASA FIRMS, LANCE, EOSDIS"
+            title: "NASA GIBS imagery",
+            url: "https://nasa-gibs.github.io/gibs-api-docs/",
+            attribution: "Satellite imagery by NASA Global Imagery Browse Services"
           },
           generatedAt: timestamp,
           cached: false,
           area: bounds,
-          sourceDataset: "VIIRS_SNPP_NRT",
-          dayRange: 1,
-          detections: [],
-          summary: {
-            count: 0,
-            highConfidenceCount: 0,
-            dayCount: 0,
-            nightCount: 0
+          snapshot: {
+            id: "snapshot-1",
+            title: "VIIRS SNPP corrected reflectance true colour",
+            layerId: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+            imageUrl: "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi",
+            acquiredDate: "2026-06-20",
+            format: "image/jpeg",
+            width: 512,
+            height: 512,
+            projection: "EPSG:4326",
+            area: bounds
           },
-          risk: {
-            level: "low",
-            reasons: ["No active fire detections were returned for this area."]
-          },
-          limitations: ["Test service."]
+          limitations: ["GIBS browse imagery is contextual."]
         };
       }
     };
     app = await createApp(config, {
-      fireContextService,
+      satelliteContextService,
       startStreams: false
     });
 
     const response = await app.inject({
       method: "GET",
-      url: "/context/fire-anomalies?south=50.68&west=-1.28&north=50.9&east=-0.86",
+      url: "/context/satellite-snapshot?south=50.68&west=-1.28&north=50.9&east=-0.86",
       headers: { origin: "http://localhost:5173" }
     });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       status: "ok",
+      provider: "nasa-gibs",
       area: {
         south: 50.68,
         west: -1.28,
         north: 50.9,
         east: -0.86
-      },
-      sourceDataset: "VIIRS_SNPP_NRT"
+      }
     });
   });
 
-  it("rejects invalid fire context bounds without calling the provider service", async () => {
-    const fireContextService: IFireContextService = {
-      async getAreaFires() {
-        throw new Error("service should not be called");
-      }
-    };
+  it("returns a typed provider error for over-large satellite bounds", async () => {
     app = await createApp(config, {
-      fireContextService,
       startStreams: false
     });
 
     const response = await app.inject({
       method: "GET",
-      url: "/context/fire-anomalies?south=51&west=-1&north=50&east=-1",
+      url: "/context/satellite-snapshot?south=-90&west=-180&north=90&east=180",
       headers: { origin: "http://localhost:5173" }
     });
 
-    expect(response.statusCode).toBe(400);
-  });
-
-  it("rejects over-large fire context bounds without calling the provider service", async () => {
-    const fireContextService: IFireContextService = {
-      async getAreaFires() {
-        throw new Error("service should not be called");
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      status: "error",
+      mode: "live",
+      provider: "nasa-gibs",
+      area: {
+        south: -90,
+        west: -180,
+        north: 90,
+        east: 180
       }
-    };
-    app = await createApp(config, {
-      fireContextService,
-      startStreams: false
     });
-
-    const response = await app.inject({
-      method: "GET",
-      url: "/context/fire-anomalies?south=-90&west=-180&north=90&east=180",
-      headers: { origin: "http://localhost:5173" }
-    });
-
-    expect(response.statusCode).toBe(400);
     expect(response.json().error).toContain("too tall");
   });
 });

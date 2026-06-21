@@ -12,6 +12,7 @@ import {
   healthResponseSchema,
   marineWeatherResponseSchema,
   sanctionsScreeningResponseSchema,
+  satelliteContextResponseSchema,
   vesselIntelResponseSchema,
   vesselSnapshotResponseSchema,
   type AisStreamStatus,
@@ -27,6 +28,7 @@ import {
   type HealthResponse,
   type MarineWeatherResponse,
   type SanctionsScreeningResponse,
+  type SatelliteContextResponse,
   type TrafficAreaBounds,
   type VesselIntelResponse,
   type VesselSnapshotResponse
@@ -46,6 +48,7 @@ export type ApiClient = {
   getHealth(): Promise<HealthResponse>;
   getMarineWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
   getSanctionsScreening(vesselId: string): Promise<SanctionsScreeningResponse>;
+  getSatelliteContext(bounds: TrafficAreaBounds): Promise<SatelliteContextResponse>;
   getStreamStatus(): Promise<AisStreamStatus>;
   getVesselIntel(vesselId: string): Promise<VesselIntelResponse>;
   getVessels(): Promise<VesselSnapshotResponse>;
@@ -161,6 +164,18 @@ export function createApiClient(baseUrl: string): ApiClient {
       getJson(`/vessels/${encodeURIComponent(vesselId)}/sanctions-screening`, (value) =>
         sanctionsScreeningResponseSchema.parse(value)
       ),
+    getSatelliteContext: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(`/context/satellite-snapshot?${params.toString()}`, (value) =>
+        satelliteContextResponseSchema.parse(value)
+      );
+    },
     getStreamStatus: () =>
       getJson("/stream/status", (value) => aisStreamStatusSchema.parse(value)),
     getVesselIntel: (vesselId) =>

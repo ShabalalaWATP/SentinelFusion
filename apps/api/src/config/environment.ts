@@ -93,6 +93,11 @@ const rawConfigSchema = z.object({
   SANCTIONS_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
   SANCTIONS_CONTEXT_PROVIDER: z.enum(["opensanctions", "custom"]).default("opensanctions"),
   SANCTIONS_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(10),
+  SATELLITE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("live"),
+  SATELLITE_CONTEXT_PROVIDER: z.enum(["nasa-gibs", "custom"]).default("nasa-gibs"),
+  SATELLITE_CONTEXT_LAYER: z.string().min(1).max(120).default("VIIRS_SNPP_CorrectedReflectance_TrueColor"),
+  SATELLITE_CONTEXT_DATE_OFFSET_DAYS: z.coerce.number().int().min(0).max(30).default(1),
+  SATELLITE_CONTEXT_IMAGE_SIZE: z.coerce.number().int().min(256).max(1024).default(512),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -159,6 +164,11 @@ export type AppConfig = {
   sanctionsContextMode: "off" | "mock" | "live";
   sanctionsContextProvider: "opensanctions" | "custom";
   sanctionsContextMaxResults: number;
+  satelliteContextMode: "off" | "mock" | "live";
+  satelliteContextProvider: "nasa-gibs" | "custom";
+  satelliteContextLayer: string;
+  satelliteContextDateOffsetDays: number;
+  satelliteContextImageSize: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -259,6 +269,11 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     sanctionsContextMode: parsed.SANCTIONS_CONTEXT_MODE,
     sanctionsContextProvider: parsed.SANCTIONS_CONTEXT_PROVIDER,
     sanctionsContextMaxResults: parsed.SANCTIONS_CONTEXT_MAX_RESULTS,
+    satelliteContextMode: parsed.SATELLITE_CONTEXT_MODE,
+    satelliteContextProvider: parsed.SATELLITE_CONTEXT_PROVIDER,
+    satelliteContextLayer: parsed.SATELLITE_CONTEXT_LAYER,
+    satelliteContextDateOffsetDays: parsed.SATELLITE_CONTEXT_DATE_OFFSET_DAYS,
+    satelliteContextImageSize: parsed.SATELLITE_CONTEXT_IMAGE_SIZE,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,

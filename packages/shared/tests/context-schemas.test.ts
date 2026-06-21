@@ -5,7 +5,8 @@ import {
   filedRouteContextResponseSchema,
   fireContextResponseSchema,
   marineWeatherResponseSchema,
-  sanctionsScreeningResponseSchema
+  sanctionsScreeningResponseSchema,
+  satelliteContextResponseSchema
 } from "../src";
 
 const now = new Date("2026-06-20T12:00:00.000Z").toISOString();
@@ -301,5 +302,38 @@ describe("context schemas", () => {
 
     expect(parsed.matches[0]?.reviewStatus).toBe("possible_match");
     expect(parsed.summary.reviewRequiredCount).toBe(1);
+  });
+
+  it("validates satellite snapshot context responses", () => {
+    const parsed = satelliteContextResponseSchema.parse({
+      status: "ok",
+      mode: "live",
+      provider: "nasa-gibs",
+      source: {
+        title: "NASA GIBS imagery",
+        url: "https://nasa-gibs.github.io/gibs-api-docs/",
+        attribution: "Satellite imagery by NASA Global Imagery Browse Services"
+      },
+      generatedAt: now,
+      cached: false,
+      area: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 },
+      snapshot: {
+        id: "nasa-gibs:VIIRS_SNPP_CorrectedReflectance_TrueColor:2026-06-19:50.68:-1.28:50.9:-0.86",
+        title: "VIIRS SNPP corrected reflectance true colour",
+        layerId: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        imageUrl:
+          "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap",
+        acquiredDate: "2026-06-19",
+        format: "image/jpeg",
+        width: 512,
+        height: 512,
+        projection: "EPSG:4326",
+        area: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 }
+      },
+      limitations: ["GIBS browse imagery is contextual and may be obscured by cloud."]
+    });
+
+    expect(parsed.snapshot?.layerId).toBe("VIIRS_SNPP_CorrectedReflectance_TrueColor");
+    expect(parsed.snapshot?.width).toBe(512);
   });
 });

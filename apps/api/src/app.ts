@@ -21,6 +21,7 @@ import { FiledRouteContextService } from "./context/filed-route-context-service"
 import { FireContextService } from "./context/fire-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
 import { SanctionsScreeningService } from "./context/sanctions-screening-service";
+import { SatelliteContextService } from "./context/satellite-context-service";
 import type {
   IAisStreamClient,
   IAirspaceContextService,
@@ -32,6 +33,7 @@ import type {
   IFireContextService,
   IMarineWeatherService,
   ISanctionsScreeningService,
+  ISatelliteContextService,
   IVesselIntelService
 } from "./domain/interfaces";
 import { InMemoryAircraftRepository } from "./domain/aircraft-repository";
@@ -53,6 +55,7 @@ import { registerFireContextRoute } from "./routes/fire-context";
 import { registerFlightStatusRoute } from "./routes/flight-status";
 import { registerHealthRoute } from "./routes/health";
 import { registerMarineWeatherRoute } from "./routes/marine-weather";
+import { registerSatelliteContextRoute } from "./routes/satellite-context";
 import { registerStreamStatusRoute } from "./routes/stream-status";
 import { registerVesselRoutes } from "./routes/vessels";
 import { registerAircraftStream } from "./ws/aircraft-stream";
@@ -67,6 +70,7 @@ type CreateAppOptions = {
   fireContextService?: IFireContextService;
   marineWeatherService?: IMarineWeatherService;
   sanctionsScreeningService?: ISanctionsScreeningService;
+  satelliteContextService?: ISatelliteContextService;
   vesselIntelService?: IVesselIntelService;
   seedAircraft?: Aircraft[];
   seedVessels?: Vessel[];
@@ -109,6 +113,8 @@ export async function createApp(
     options.marineWeatherService ?? createMarineWeatherService(config);
   const sanctionsScreeningService =
     options.sanctionsScreeningService ?? createSanctionsScreeningService(config);
+  const satelliteContextService =
+    options.satelliteContextService ?? createSatelliteContextService(config);
   const vesselIntelService = options.vesselIntelService ?? createVesselIntelService(config);
 
   options.seedAircraft?.forEach((aircraft) => aircraftRepository.upsert(aircraft));
@@ -142,6 +148,9 @@ export async function createApp(
   });
   await registerFireContextRoute(app, {
     service: fireContextService
+  });
+  await registerSatelliteContextRoute(app, {
+    service: satelliteContextService
   });
   await registerAircraftRoutes(app, {
     repository: aircraftRepository,
@@ -302,6 +311,10 @@ function createVesselIntelService(config: AppConfig): IVesselIntelService {
 
 function createSanctionsScreeningService(config: AppConfig): ISanctionsScreeningService {
   return new SanctionsScreeningService(config);
+}
+
+function createSatelliteContextService(config: AppConfig): ISatelliteContextService {
+  return new SatelliteContextService(config);
 }
 
 function createAircraftIntelService(config: AppConfig): IAircraftIntelService {
