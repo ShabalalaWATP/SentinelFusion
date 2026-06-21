@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  airspaceContextResponseSchema,
   airportContextResponseSchema,
   fireContextResponseSchema,
   marineWeatherResponseSchema
@@ -179,5 +180,42 @@ describe("context schemas", () => {
 
     expect(parsed.airports[0]?.ident).toBe("EGHF");
     expect(parsed.summary.longestRunwayFt).toBe(3480);
+  });
+
+  it("validates airspace notice context responses", () => {
+    const parsed = airspaceContextResponseSchema.parse({
+      status: "ok",
+      mode: "mock",
+      source: {
+        title: "Mock airspace notices",
+        url: "https://www.faa.gov/air_traffic/technology/swim",
+        attribution: "Authorised provider required"
+      },
+      generatedAt: now,
+      cached: false,
+      area: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 },
+      notices: [
+        {
+          id: "mock-airspace-training-area",
+          type: "restricted_area",
+          status: "active",
+          severity: "medium",
+          title: "Mock restricted training area",
+          description: "Mock airspace notice for local development.",
+          startsAt: now,
+          bounds: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 }
+        }
+      ],
+      summary: {
+        count: 1,
+        activeCount: 1,
+        upcomingCount: 0,
+        highSeverityCount: 0
+      },
+      limitations: ["Mock airspace notices are not live NOTAM/TFR data."]
+    });
+
+    expect(parsed.notices[0]?.type).toBe("restricted_area");
+    expect(parsed.summary.activeCount).toBe(1);
   });
 });

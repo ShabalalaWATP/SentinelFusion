@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
-import type { IMarineWeatherService } from "../src/domain/interfaces";
+import type { IAirspaceContextService } from "../src/domain/interfaces";
 
-const timestamp = "2026-06-20T12:00:00.000Z";
+const timestamp = "2026-06-21T12:00:00.000Z";
 const config: AppConfig = {
   nodeEnv: "test",
   host: "127.0.0.1",
@@ -59,78 +59,94 @@ afterEach(async () => {
   app = undefined;
 });
 
-describe("marine weather route", () => {
-  it("returns marine weather context for valid area bounds", async () => {
-    const marineWeatherService: IMarineWeatherService = {
-      async getAreaWeather(bounds) {
+describe("airspace context route", () => {
+  it("returns airspace context for valid area bounds", async () => {
+    const airspaceContextService: IAirspaceContextService = {
+      async getAreaAirspace(bounds) {
         return {
-          status: "ok",
-          mode: "mock",
+          status: "not_configured",
+          mode: "off",
           source: {
-            title: "Open-Meteo Marine Weather",
-            url: "https://open-meteo.com/en/docs/marine-weather-api",
-            attribution: "Weather data by Open-Meteo"
+            title: "Authorised NOTAM/TFR provider",
+            url: "https://www.faa.gov/air_traffic/technology/swim",
+            attribution: "Authorised provider required"
           },
           generatedAt: timestamp,
           cached: false,
           area: bounds,
-          location: { latitude: 50.79, longitude: -1.07 },
-          current: {
-            time: timestamp,
-            waveHeightM: 0.8
+          notices: [],
+          summary: {
+            count: 0,
+            activeCount: 0,
+            upcomingCount: 0,
+            highSeverityCount: 0
           },
-          forecast: [],
-          risk: {
-            level: "low",
-            reasons: ["Mock marine weather is below configured concern thresholds."]
-          },
-          limitations: ["Test service."]
+          limitations: ["Provider not configured."],
+          error: "Authorised airspace notice provider is not configured."
         };
       }
     };
     app = await createApp(config, {
-      marineWeatherService,
+      airspaceContextService,
       startStreams: false
     });
 
     const response = await app.inject({
       method: "GET",
-      url: "/context/marine-weather?south=50.68&west=-1.28&north=50.9&east=-0.86",
+      url: "/context/airspace?south=50.68&west=-1.28&north=50.9&east=-0.86",
       headers: { origin: "http://localhost:5173" }
     });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      status: "ok",
+      status: "not_configured",
       area: {
         south: 50.68,
         west: -1.28,
         north: 50.9,
         east: -0.86
-      },
-      current: {
-        waveHeightM: 0.8
       }
     });
   });
 
-  it("rejects invalid marine weather bounds without calling the provider service", async () => {
-    const marineWeatherService: IMarineWeatherService = {
-      async getAreaWeather() {
+  it("rejects invalid airspace bounds without calling the service", async () => {
+    const airspaceContextService: IAirspaceContextService = {
+      async getAreaAirspace() {
         throw new Error("service should not be called");
       }
     };
     app = await createApp(config, {
-      marineWeatherService,
+      airspaceContextService,
       startStreams: false
     });
 
     const response = await app.inject({
       method: "GET",
-      url: "/context/marine-weather?south=51&west=-1&north=50&east=-1",
+      url: "/context/airspace?south=51&west=-1&north=50&east=-1",
       headers: { origin: "http://localhost:5173" }
     });
 
     expect(response.statusCode).toBe(400);
+  });
+
+  it("rejects over-large airspace bounds without calling the service", async () => {
+    const airspaceContextService: IAirspaceContextService = {
+      async getAreaAirspace() {
+        throw new Error("service should not be called");
+      }
+    };
+    app = await createApp(config, {
+      airspaceContextService,
+      startStreams: false
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/context/airspace?south=-90&west=-180&north=90&east=180",
+      headers: { origin: "http://localhost:5173" }
+    });
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json().error).toContain("too tall");
   });
 });

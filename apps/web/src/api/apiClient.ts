@@ -4,6 +4,7 @@ import {
   aircraftSnapshotResponseSchema,
   analysisRequestSchema,
   analysisSummarySchema,
+  airspaceContextResponseSchema,
   airportContextResponseSchema,
   fireContextResponseSchema,
   flightStreamStatusSchema,
@@ -16,6 +17,7 @@ import {
   type AircraftIntelResponse,
   type AnalysisRequest,
   type AnalysisSummary,
+  type AirspaceContextResponse,
   type AirportContextResponse,
   type FireContextResponse,
   type FlightStreamStatus,
@@ -32,6 +34,7 @@ export type ApiClient = {
   getAircraft(): Promise<AircraftSnapshotResponse>;
   getAircraftAirportContext(aircraftId: string): Promise<AirportContextResponse>;
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
+  getAirspaceContext(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
   getAirportContext(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
   getFireContext(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
@@ -93,6 +96,18 @@ export function createApiClient(baseUrl: string): ApiClient {
       postJson(`/aircraft/${encodeURIComponent(aircraftId)}/intel`, {}, (value) =>
         aircraftIntelResponseSchema.parse(value)
       ),
+    getAirspaceContext: (bounds) => {
+      const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east)
+      });
+
+      return getJson(`/context/airspace?${params.toString()}`, (value) =>
+        airspaceContextResponseSchema.parse(value)
+      );
+    },
     getAirportContext: (bounds) => {
       const params = new URLSearchParams({
         south: String(bounds.south),

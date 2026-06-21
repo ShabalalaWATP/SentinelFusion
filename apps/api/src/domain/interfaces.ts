@@ -3,6 +3,7 @@ import type {
   AisStreamState,
   Aircraft,
   AircraftIntelResponse,
+  AirspaceContextResponse,
   AirportContextResponse,
   AircraftMetrics,
   AircraftStreamEnvelope,
@@ -199,6 +200,10 @@ export interface IAirportContextService {
     label?: string;
     radiusKm?: number;
   }): Promise<AirportContextResponse>;
+}
+
+export interface IAirspaceContextService {
+  getAreaAirspace(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
 }
 
 export interface IMarineWeatherService {

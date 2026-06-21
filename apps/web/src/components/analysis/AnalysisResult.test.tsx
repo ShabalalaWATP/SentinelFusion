@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AnalysisSummary } from "@aisstream/shared";
+import { useAirspaceContextStore } from "../../stores/airspaceContextStore";
 import { useAirportContextStore } from "../../stores/airportContextStore";
 import { useFireContextStore } from "../../stores/fireContextStore";
 import { useMapStore } from "../../stores/mapStore";
@@ -80,6 +81,12 @@ const result: AnalysisSummary = {
 describe("AnalysisResult", () => {
   beforeEach(() => {
     useMapStore.setState({ areaFocusRequest: null });
+    useAirspaceContextStore.setState({
+      status: "idle",
+      result: null,
+      error: null,
+      refresh: async () => undefined
+    });
     useMarineWeatherStore.setState({
       status: "idle",
       result: null,

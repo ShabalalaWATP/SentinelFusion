@@ -77,6 +77,8 @@ const rawConfigSchema = z.object({
   AIRPORT_CONTEXT_CACHE_SECONDS: z.coerce.number().int().min(0).default(86400),
   AIRPORT_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(8),
   AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT: z.coerce.number().int().min(0).max(12).default(4),
+  AIRSPACE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
+  AIRSPACE_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(100).default(25),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -135,6 +137,8 @@ export type AppConfig = {
   airportContextCacheSeconds: number;
   airportContextMaxResults: number;
   airportContextMaxRunwaysPerAirport: number;
+  airspaceContextMode: "off" | "mock" | "live";
+  airspaceContextMaxResults: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -229,6 +233,8 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     airportContextCacheSeconds: parsed.AIRPORT_CONTEXT_CACHE_SECONDS,
     airportContextMaxResults: parsed.AIRPORT_CONTEXT_MAX_RESULTS,
     airportContextMaxRunwaysPerAirport: parsed.AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT,
+    airspaceContextMode: parsed.AIRSPACE_CONTEXT_MODE,
+    airspaceContextMaxResults: parsed.AIRSPACE_CONTEXT_MAX_RESULTS,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,

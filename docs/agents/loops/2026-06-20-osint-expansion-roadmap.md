@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation and marine weather slices implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Complete for marine weather slice, findings remediated |
-| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Complete for marine weather slice |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests passed for marine weather slice; Browser attach failed |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, and airspace-contract slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Manual review complete for airspace contract slice after subagent disconnect |
+| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Manual review complete for airspace contract slice |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for airspace contract slice |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Complete for marine weather slice, no validated issues remain |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated for marine weather slice |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Manual review complete for airspace contract slice after subagent disconnect |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through airspace contract slice |
 
 ## Stage Order
 
@@ -74,6 +74,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Implementation: OSINT provider foundation and first no-key provider
 - [x] Implementation: NASA FIRMS active-fire provider slice
 - [x] Implementation: OurAirports airport/runway provider slice
+- [x] Implementation: NOTAM/TFR airspace provider-contract slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -87,7 +88,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | Use Open-Meteo for the first marine-weather implementation. | Research Agent, official docs | 8 | 3 | 4 | 8 | Adopted after foundation |
 | Use NASA FIRMS only with server-side `FIRMS_MAP_KEY` and not-configured UI. | Research Agent, official docs | 8 | 4 | 5 | 8 | Adopted after provider foundation |
 | Use OurAirports for low-risk airport/runway enrichment. | Research Agent, official docs | 7 | 2 | 4 | 8 | Adopted |
-| Defer NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Provider contract first |
+| Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace provider contract implemented first |
 | Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Adopt with safeguards |
 | Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Trial |
 | Start conflict/protest overlays with public GDELT/UCDP data, ACLED as configured provider. | Research Agent | 7 | 5 | 5 | 7 | Trial |
@@ -212,9 +213,37 @@ Verification evidence:
 - In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, console errors were empty, Map controls opened, and the `Airports` toggle changed `aria-pressed` from `false` to `true`. Screenshot capture succeeded.
 - Focused cyber review result after remediation: no validated security issues remain for this airport/runway slice.
 
+## Airspace Notice Contract Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `airspaceContextResponseSchema` and `AirspaceContextResponse` type with provider status, source attribution, analysed area, capped notices, validity windows, active/upcoming/high-severity summary counts, limitations, and optional error messaging.
+- API-side `AirspaceContextService` with explicit `off`, `mock`, and `live` modes. Default and unimplemented live mode return a clear `not_configured` state until authorised FAA/SWIM, TFR, or licensed NOTAM/restriction provider access is configured.
+- `GET /context/airspace` route with strict selected-area bounds validation, airspace-specific span/area limits, and no browser-supplied provider URL.
+- Web API client, `airspaceContextStore`, collapsible `AirspaceContextPanel`, and area-context stack integration. The UI shows provider status, not-configured/error states, explicit mock-only notices when enabled, source attribution, limitations, and top notices without rendering provider text as HTML.
+- Environment example variables for `AIRSPACE_CONTEXT_MODE` and `AIRSPACE_CONTEXT_MAX_RESULTS`. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm --filter @aisstream/shared test -- context-schemas`: passed, shared schema tests now 22 tests.
+- `corepack pnpm --filter @aisstream/api test -- airspace-context-service airspace-context-route app`: passed, targeted API run reported 86 tests.
+- `corepack pnpm --filter @aisstream/web test -- AirspaceContextPanel airspaceContextStore AnalysisResult`: passed after test-query remediation, targeted web run reported 116 tests.
+- `corepack pnpm typecheck`: passed after tightening typed mock notices.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm typecheck`: passed after final mock-window polish.
+- `corepack pnpm test`: passed, full suite reported shared 22 tests, API 86 tests, and web 116 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight, analysis-token, and generic API-key assignments: no matches.
+- File-size guard: touched airspace files remain within the 350-line preference.
+- Local API smoke: `GET /context/airspace?south=50.68&west=-1.28&north=50.9&east=-0.86` returned `status:"not_configured"`, `mode:"off"`, zero notices, and the expected provider-not-configured limitation.
+- In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, no Vite error overlay was present, and fresh console error/warning logs after reload were empty.
+- Quality and cyber subagents disconnected before returning findings. Manual review found no validated security issue: the browser supplies only numeric bounds, the route validates shared bounds, over-large areas are rejected before provider access, no provider URL or key is accepted from the client, mock mode is explicit, and live mode does not scrape or claim live data.
+
 ## Risks And Blockers
 
-- NOTAM/TFR, filed routes, sanctions API screening, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
+- Live NOTAM/TFR, filed routes, sanctions API screening, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
 - Sanctions and conflict/protest matches can create false positives. UI wording must make these triage signals, not legal determinations.
 - New map layers can overwhelm the dashboard. All overlays need toggles, caps, and conservative defaults.
 - Provider APIs must be protected against SSRF by fixed base URLs, bounded coordinates, and strict response validation.

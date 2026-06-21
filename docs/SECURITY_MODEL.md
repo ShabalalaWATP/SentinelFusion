@@ -8,6 +8,7 @@
 - Open-Meteo Marine Weather API: external no-key OSINT context source used only from the API.
 - NASA FIRMS Area API: external active-fire OSINT source used only from the API with `FIRMS_MAP_KEY` kept server-side.
 - OurAirports data: external public-domain airport/runway CSV source used only from the API.
+- Airspace notice providers: future authorised FAA/SWIM, TFR, or licensed NOTAM/restriction feeds used only from the API. No consumer NOTAM or flight-radar pages are scraped.
 - OpenAI API: external analysis provider used only from the API in live analysis mode.
 
 ## Implemented Controls
@@ -41,6 +42,7 @@
 - `/context/marine-weather` accepts only validated area bounds, builds requests to a fixed Open-Meteo marine host, validates provider JSON with Zod, normalises timestamps, uses timeout and bounded cache controls, and returns typed provider states without exposing provider request URLs or credentials.
 - `/context/fire-anomalies` accepts only validated area bounds, builds requests to the fixed NASA FIRMS host, keeps `FIRMS_MAP_KEY` server-side, splits antimeridian boxes into valid provider requests, parses CSV into typed/capped detections, uses timeout and bounded cache controls, and returns typed provider states without exposing provider request URLs or credentials.
 - `/context/airports` accepts only validated area bounds or numeric point lookups, builds requests to fixed OurAirports CSV URLs, caps provider response bytes while streaming and CSV rows before parsing, and returns typed airport/runway summaries. `/aircraft/:id/airport-context` resolves selected-aircraft coordinates from the server repository instead of trusting browser-supplied aircraft positions.
+- `/context/airspace` accepts only validated area bounds, rejects over-large areas before any provider access, and returns a typed not-configured state by default. Mock notices are available only through explicit API-side configuration and are labelled as mock. The current live mode does not make outbound airspace-notice requests until an authorised provider adapter is added.
 
 ## AISstream Risks
 
@@ -74,3 +76,5 @@ Mitigations implemented for marine weather: the browser can only submit numeric 
 Mitigations implemented for NASA FIRMS: the browser can only submit numeric bounds, the API uses a fixed NASA FIRMS endpoint, area/span limits reject over-large provider requests, provider cache keys are bucketed, in-flight provider requests are coalesced, provider response bytes and rows are capped before processing, the map key is never sent to browser code or API responses, provider CSV is normalised into a typed schema, detections are capped before rendering, request timeout and bounded in-memory cache settings are enforced, and UI limitations state that active-fire points are satellite thermal detections that can include false positives or missed fires.
 
 Mitigations implemented for OurAirports: the API uses fixed `airports.csv` and `runways.csv` URLs, selected areas have area/span limits, selected-aircraft lookups are resolved from server aircraft state, provider response bytes are counted during streaming and the reader is cancelled once the cap is crossed, CSV rows are capped before processing, runway lists and returned airports are capped before rendering, request timeout and bounded cache settings are enforced, and UI limitations state that OurAirports is public-domain community data rather than authoritative aeronautical information.
+
+Mitigations implemented for airspace notices: the browser can only submit numeric bounds, selected areas have airspace-specific span and area limits, no provider URL is accepted from the client, the default route returns an explicit not-configured response, mock output requires an explicit API-side mode, and UI text states that live NOTAM/TFR access needs authorised provider configuration. The implementation deliberately avoids scraping consumer NOTAM, TFR, or flight-radar pages.

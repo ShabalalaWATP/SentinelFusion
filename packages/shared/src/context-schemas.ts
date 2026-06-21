@@ -186,3 +186,41 @@ export const airportContextResponseSchema = z.object({
   limitations: z.array(z.string().min(1).max(260)).min(1).max(6),
   error: z.string().min(1).max(240).optional()
 });
+
+export const airspaceContextSourceSchema = z.object({
+  title: z.string().min(1).max(120),
+  url: publicHttpUrlSchema,
+  attribution: z.string().min(1).max(180)
+});
+
+export const airspaceNoticeSchema = z.object({
+  id: z.string().min(1).max(120),
+  type: z.enum(["notam", "tfr", "restricted_area", "airspace_warning"]),
+  status: z.enum(["active", "upcoming", "expired", "unknown"]),
+  severity: riskLevelSchema,
+  title: z.string().min(1).max(180),
+  description: z.string().min(1).max(1000),
+  airportIdent: z.string().min(1).max(16).optional(),
+  startsAt: z.string().datetime().optional(),
+  endsAt: z.string().datetime().optional(),
+  sourceUrl: publicHttpUrlSchema.optional(),
+  bounds: analysisAreaBoundsSchema.optional()
+});
+
+export const airspaceContextResponseSchema = z.object({
+  status: z.enum(["ok", "not_configured", "error"]),
+  mode: z.enum(["off", "mock", "live"]),
+  source: airspaceContextSourceSchema,
+  generatedAt: z.string().datetime(),
+  cached: z.boolean(),
+  area: analysisAreaBoundsSchema.optional(),
+  notices: z.array(airspaceNoticeSchema).max(100),
+  summary: z.object({
+    count: z.number().int().nonnegative(),
+    activeCount: z.number().int().nonnegative(),
+    upcomingCount: z.number().int().nonnegative(),
+    highSeverityCount: z.number().int().nonnegative()
+  }),
+  limitations: z.array(z.string().min(1).max(280)).min(1).max(6),
+  error: z.string().min(1).max(260).optional()
+});

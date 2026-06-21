@@ -52,6 +52,7 @@ The app is live-first. On normal startup the API expects live AISstream ingestio
 - `FLIGHT_POLL_INTERVAL_MS` defaults to `90000` for OpenSky because a worldwide `/states/all` request consumes provider credits. The OpenSky client also honours provider retry-after headers when credits are exhausted.
 - Flight provider keys are API-only. Do not put `FLIGHT_API_KEY` or OpenSky secrets in `apps/web/.env` or any `VITE_` variable.
 - `AIRPORT_CONTEXT_MODE=live` uses public OurAirports airport/runway CSV data through the API. It needs no browser key and no `VITE_` variable.
+- `AIRSPACE_CONTEXT_MODE=off` is the default because live NOTAM/TFR and restricted-airspace access needs an authorised or licensed provider. `mock` is available for offline UI development and is labelled as mock.
 - `MARINE_WEATHER_MODE=live` uses Open-Meteo through the API. `FIRMS_MODE=live` requires `FIRMS_MAP_KEY` on the API server only.
 - `ANALYSIS_API_TOKEN` is required for live analysis unless `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is set for local development. If a token is set, `/analysis`, vessel intel enrichment, and aircraft intel enrichment require `Authorization: Bearer <token>` or `x-analysis-token`. Do not put this token in a `VITE_` variable.
 - `ALLOW_UNAUTHENTICATED_ANALYSIS=true` is for local loopback development only. Production live analysis always requires `ANALYSIS_API_TOKEN`.
@@ -83,7 +84,7 @@ See `docs/SECURITY_MODEL.md` for the full model.
 
 ## Flight Tracking Expansion
 
-The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, combined sea/air military intel, and API-owned OSINT context for marine weather, active fire, and airports/runways. Source/stale-data filters, route-age polish, and provider settings remain planned.
+The aviation expansion is tracked in `docs/MASTER_IMPLEMENTATION_PLAN.md`. Implemented pieces include aircraft streaming contracts, mock aircraft, OpenSky and ADS-B Exchange live adapters, aircraft map rendering, aircraft details, aircraft web intel, aircraft search, aircraft operations filters, sea/air map filtering, aircraft-aware area analysis, combined sea/air military intel, and API-owned OSINT context for marine weather, active fire, airports/runways, and airspace notice provider status. Route-age polish and credentialed enrichment providers remain planned.
 
 ## Agentic Upgrade Framework
 

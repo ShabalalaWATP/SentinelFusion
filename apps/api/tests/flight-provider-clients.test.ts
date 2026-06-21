@@ -268,6 +268,8 @@ function baseConfig({
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
+  airspaceContextMode: "off",
+  airspaceContextMaxResults: 25,
     analysisMode: "mock",
     openaiModel: "gpt-5.4-mini",
     openaiTimeoutMs: 20000,
