@@ -15,7 +15,7 @@ export type FlightRealtimeClient = {
   connect(handlers: FlightRealtimeHandlers): () => void;
 };
 
-export function createFlightRealtimeClient(url: string): FlightRealtimeClient {
+function createFlightRealtimeClient(url: string): FlightRealtimeClient {
   return {
     connect(handlers) {
       handlers.onStatus("connecting");

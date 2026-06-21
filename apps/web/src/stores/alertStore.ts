@@ -22,8 +22,8 @@ type AlertStoreState = {
   updateProviderIncident(domain: ProviderIncidentDomain, healthy: boolean, nowIso: string): string;
 };
 
-export type ProviderIncidentDomain = "vessel" | "aircraft";
-export type ProviderIncidentRecord = {
+type ProviderIncidentDomain = "vessel" | "aircraft";
+type ProviderIncidentRecord = {
   epoch: string;
   unhealthy: boolean;
 };

@@ -1,7 +1,7 @@
 import type { MarineWeatherResponse, RiskLevel, TrafficAreaBounds } from "@aisstream/shared";
 import { z } from "zod";
 
-export const marineWeatherProviderSource = {
+const marineWeatherProviderSource = {
   title: "Open-Meteo Marine Weather",
   url: "https://open-meteo.com/en/docs/marine-weather-api",
   attribution: "Weather data by Open-Meteo"

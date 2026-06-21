@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  airspaceContextResponseSchema,
   airportContextResponseSchema,
-  filedRouteContextResponseSchema,
   fireContextResponseSchema,
   marineWeatherResponseSchema,
-  sanctionsScreeningResponseSchema,
   satelliteContextResponseSchema
 } from "../src";
 
@@ -183,125 +180,6 @@ describe("context schemas", () => {
 
     expect(parsed.airports[0]?.ident).toBe("EGHF");
     expect(parsed.summary.longestRunwayFt).toBe(3480);
-  });
-
-  it("validates airspace notice context responses", () => {
-    const parsed = airspaceContextResponseSchema.parse({
-      status: "ok",
-      mode: "mock",
-      source: {
-        title: "Mock airspace notices",
-        url: "https://www.faa.gov/air_traffic/technology/swim",
-        attribution: "Authorised provider required"
-      },
-      generatedAt: now,
-      cached: false,
-      area: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 },
-      notices: [
-        {
-          id: "mock-airspace-training-area",
-          type: "restricted_area",
-          status: "active",
-          severity: "medium",
-          title: "Mock restricted training area",
-          description: "Mock airspace notice for local development.",
-          startsAt: now,
-          bounds: { south: 50.68, west: -1.28, north: 50.9, east: -0.86 }
-        }
-      ],
-      summary: {
-        count: 1,
-        activeCount: 1,
-        upcomingCount: 0,
-        highSeverityCount: 0
-      },
-      limitations: ["Mock airspace notices are not live NOTAM/TFR data."]
-    });
-
-    expect(parsed.notices[0]?.type).toBe("restricted_area");
-    expect(parsed.summary.activeCount).toBe(1);
-  });
-
-  it("validates filed route context responses", () => {
-    const parsed = filedRouteContextResponseSchema.parse({
-      status: "ok",
-      mode: "mock",
-      provider: "mock",
-      source: {
-        title: "Mock filed route",
-        url: "https://www.flightaware.com/aeroapi/portal/documentation",
-        attribution: "Mock filed route context for local development"
-      },
-      generatedAt: now,
-      cached: false,
-      aircraft: {
-        aircraftId: "icao24-407abc",
-        icao24: "407abc",
-        callsign: "RFR7182"
-      },
-      route: {
-        callsign: "RFR7182",
-        originAirport: "EGLL",
-        destinationAirport: "EGJJ",
-        scheduledDeparture: now,
-        scheduledArrival: now,
-        routeText: "EGLL CPT SAM EGJJ",
-        waypoints: [
-          { sequence: 0, ident: "EGLL", latitude: 51.47, longitude: -0.45 },
-          { sequence: 1, ident: "CPT" }
-        ],
-        confidence: "low",
-        status: "planned"
-      },
-      limitations: ["Mock filed routes are not live flight-plan data."]
-    });
-
-    expect(parsed.route?.originAirport).toBe("EGLL");
-    expect(parsed.route?.waypoints).toHaveLength(2);
-  });
-
-  it("validates sanctions screening responses as review leads", () => {
-    const parsed = sanctionsScreeningResponseSchema.parse({
-      status: "ok",
-      mode: "mock",
-      provider: "mock",
-      source: {
-        title: "Mock sanctions screening",
-        url: "https://www.opensanctions.org/docs/api/",
-        attribution: "Mock screening context for local development"
-      },
-      generatedAt: now,
-      cached: false,
-      subject: {
-        vesselId: "mmsi-232001234",
-        mmsi: "232001234",
-        name: "NORTHERN LIGHT",
-        shipType: "Cargo"
-      },
-      matches: [
-        {
-          id: "mock-review-lead",
-          caption: "Northern Light Shipping Ltd",
-          schema: "Company",
-          score: 0.72,
-          risk: "medium",
-          reviewStatus: "possible_match",
-          topics: ["sanction"],
-          datasets: ["mock-watchlist"],
-          sourceUrl: "https://www.opensanctions.org/",
-          explanation: "Mock lead based on a similar vessel name. Human review is required."
-        }
-      ],
-      summary: {
-        matchCount: 1,
-        reviewRequiredCount: 1,
-        highestScore: 0.72
-      },
-      limitations: ["Screening results are triage leads and can be false positives."]
-    });
-
-    expect(parsed.matches[0]?.reviewStatus).toBe("possible_match");
-    expect(parsed.summary.reviewRequiredCount).toBe(1);
   });
 
   it("validates satellite snapshot context responses", () => {

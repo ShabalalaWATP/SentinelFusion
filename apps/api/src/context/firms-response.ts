@@ -1,6 +1,6 @@
 import type { FireContextResponse, RiskLevel, TrafficAreaBounds } from "@aisstream/shared";
 
-export const firmsProviderSource = {
+const firmsProviderSource = {
   title: "NASA FIRMS Active Fire",
   url: "https://firms.modaps.eosdis.nasa.gov/api/area/",
   attribution: "Active fire data by NASA FIRMS, LANCE, EOSDIS"

@@ -1,8 +1,8 @@
 import type { TrafficAreaBounds } from "@aisstream/shared";
 
-export const maxSatelliteLatitudeSpan = 20;
-export const maxSatelliteLongitudeSpan = 40;
-export const maxSatelliteAreaDegrees = 400;
+const maxSatelliteLatitudeSpan = 20;
+const maxSatelliteLongitudeSpan = 40;
+const maxSatelliteAreaDegrees = 400;
 
 export function satelliteContextAreaLimitError(bounds: TrafficAreaBounds): string | null {
   const latitudeSpan = Math.abs(bounds.north - bounds.south);

@@ -127,6 +127,85 @@ describe("marine weather service", () => {
       error: "Open-Meteo returned HTTP 503."
     });
   });
+
+  it("normalises antimeridian centres and honours disabled response caching", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          latitude: 10,
+          longitude: -179.5,
+          current: {
+            time: generatedAtSeconds,
+            wave_height: 0.4
+          }
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+    const service = new MarineWeatherService(
+      config({
+        marineWeatherMode: "live",
+        marineWeatherCacheSeconds: 0
+      }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+    const antimeridianBounds = { south: 9, west: 179, north: 11, east: -178 };
+
+    const first = await service.getAreaWeather(antimeridianBounds);
+    const second = await service.getAreaWeather(antimeridianBounds);
+    const calledUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+
+    expect(first.status).toBe("ok");
+    expect(second.cached).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(calledUrl.searchParams.get("longitude")).toBe("-179.50000");
+  });
+
+  it("evicts the oldest marine weather cache entry at the configured cache limit", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          latitude: 50.79,
+          longitude: -1.04,
+          current: {
+            time: generatedAtSeconds,
+            wave_height: 0.4
+          }
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+    const service = new MarineWeatherService(
+      config({
+        marineWeatherMode: "live",
+        marineWeatherCacheMaxEntries: 1
+      }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+    const alternateBounds = { south: 40, west: 10, north: 41, east: 11 };
+
+    await service.getAreaWeather(bounds);
+    await service.getAreaWeather(alternateBounds);
+    await service.getAreaWeather(bounds);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("wraps non-Error Open-Meteo failures in a safe provider error", async () => {
+    const fetchMock = vi.fn(async () => Promise.reject("socket closed"));
+    const service = new MarineWeatherService(
+      config({ marineWeatherMode: "live" }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+
+    const result = await service.getAreaWeather(bounds);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toBe("Open-Meteo request failed.");
+  });
 });
 
 function config(overrides: Partial<AppConfig> = {}): AppConfig {
@@ -167,14 +246,6 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",

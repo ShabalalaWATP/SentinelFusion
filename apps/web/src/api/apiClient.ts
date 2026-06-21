@@ -4,15 +4,12 @@ import {
   aircraftSnapshotResponseSchema,
   analysisRequestSchema,
   analysisSummarySchema,
-  airspaceContextResponseSchema,
   airportContextResponseSchema,
   conflictContextResponseSchema,
-  filedRouteContextResponseSchema,
   fireContextResponseSchema,
   flightStreamStatusSchema,
   healthResponseSchema,
   marineWeatherResponseSchema,
-  sanctionsScreeningResponseSchema,
   satelliteContextResponseSchema,
   vesselIntelResponseSchema,
   vesselSnapshotResponseSchema,
@@ -21,15 +18,12 @@ import {
   type AircraftIntelResponse,
   type AnalysisRequest,
   type AnalysisSummary,
-  type AirspaceContextResponse,
   type AirportContextResponse,
   type ConflictContextResponse,
-  type FiledRouteContextResponse,
   type FireContextResponse,
   type FlightStreamStatus,
   type HealthResponse,
   type MarineWeatherResponse,
-  type SanctionsScreeningResponse,
   type SatelliteContextResponse,
   type TrafficAreaBounds,
   type VesselIntelResponse,
@@ -42,16 +36,13 @@ export type ApiClient = {
   analyse(request: AnalysisRequest): Promise<AnalysisSummary>;
   getAircraft(): Promise<AircraftSnapshotResponse>;
   getAircraftAirportContext(aircraftId: string): Promise<AirportContextResponse>;
-  getAircraftFiledRoute(aircraftId: string): Promise<FiledRouteContextResponse>;
   getAircraftIntel(aircraftId: string): Promise<AircraftIntelResponse>;
-  getAirspaceContext(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
   getAirportContext(bounds: TrafficAreaBounds): Promise<AirportContextResponse>;
   getConflictContext(bounds: TrafficAreaBounds): Promise<ConflictContextResponse>;
   getFireContext(bounds: TrafficAreaBounds): Promise<FireContextResponse>;
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
   getMarineWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
-  getSanctionsScreening(vesselId: string): Promise<SanctionsScreeningResponse>;
   getSatelliteContext(bounds: TrafficAreaBounds): Promise<SatelliteContextResponse>;
   getStreamStatus(): Promise<AisStreamStatus>;
   getVesselIntel(vesselId: string): Promise<VesselIntelResponse>;
@@ -112,10 +103,6 @@ export function createApiClient(baseUrl: string): ApiClient {
       getJson(`/aircraft/${encodeURIComponent(aircraftId)}/airport-context`, (value) =>
         airportContextResponseSchema.parse(value)
       ),
-    getAircraftFiledRoute: (aircraftId) =>
-      getJson(`/aircraft/${encodeURIComponent(aircraftId)}/filed-route`, (value) =>
-        filedRouteContextResponseSchema.parse(value)
-      ),
     getAircraftIntel: (aircraftId) =>
       postJson(
         `/aircraft/${encodeURIComponent(aircraftId)}/intel`,
@@ -123,18 +110,6 @@ export function createApiClient(baseUrl: string): ApiClient {
         (value) => aircraftIntelResponseSchema.parse(value),
         { auth: true }
       ),
-    getAirspaceContext: (bounds) => {
-      const params = new URLSearchParams({
-        south: String(bounds.south),
-        west: String(bounds.west),
-        north: String(bounds.north),
-        east: String(bounds.east)
-      });
-
-      return getJson(`/context/airspace?${params.toString()}`, (value) =>
-        airspaceContextResponseSchema.parse(value)
-      );
-    },
     getAirportContext: (bounds) => {
       const params = new URLSearchParams({
         south: String(bounds.south),
@@ -188,12 +163,6 @@ export function createApiClient(baseUrl: string): ApiClient {
         marineWeatherResponseSchema.parse(value)
       );
     },
-    getSanctionsScreening: (vesselId) =>
-      getJson(
-        `/vessels/${encodeURIComponent(vesselId)}/sanctions-screening`,
-        (value) => sanctionsScreeningResponseSchema.parse(value),
-        { auth: true }
-      ),
     getSatelliteContext: (bounds) => {
       const params = new URLSearchParams({
         south: String(bounds.south),

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { TrafficAreaBounds } from "@aisstream/shared";
 import { readLocalJson, writeLocalJson } from "./localStore";
 
-export type MonitoredEntityDomain = "vessel" | "aircraft";
+type MonitoredEntityDomain = "vessel" | "aircraft";
 
 export type AreaAnomalyMonitor = {
   id: string;

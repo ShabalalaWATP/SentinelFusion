@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import type { AisStreamStatus } from "@aisstream/shared";
 import { z } from "zod";
 import type {
-  ISanctionsScreeningService,
   IVesselAnalyticsService,
   IVesselIntelService,
   IVesselRepository
@@ -18,7 +17,6 @@ type VesselRouteDependencies = {
   analytics: IVesselAnalyticsService;
   getStreamStatus?: () => AisStreamStatus;
   intelService?: IVesselIntelService;
-  sanctionsScreeningService?: ISanctionsScreeningService;
   analysisApiToken?: string;
 };
 
@@ -63,25 +61,4 @@ export async function registerVesselRoutes(
     return dependencies.intelService.enrich(vessel);
   });
 
-  app.get("/vessels/:id/sanctions-screening", async (request, reply) => {
-    if (!isAuthorised(request, dependencies.analysisApiToken)) {
-      return reply.code(401).send({ error: "Analysis token is required." });
-    }
-
-    if (!dependencies.sanctionsScreeningService) {
-      return reply.code(503).send({ error: "Sanctions screening service is unavailable." });
-    }
-
-    const parsed = vesselParamsSchema.safeParse(request.params);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: "Vessel id is invalid." });
-    }
-
-    const vessel = dependencies.repository.getById(parsed.data.id);
-    if (!vessel) {
-      return reply.code(404).send({ error: "Requested vessel was not found." });
-    }
-
-    return dependencies.sanctionsScreeningService.screenVessel(vessel);
-  });
 }

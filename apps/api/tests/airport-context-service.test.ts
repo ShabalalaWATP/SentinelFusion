@@ -81,6 +81,24 @@ describe("airport context service", () => {
     expect(result.airports[0]?.distanceKm).toBeLessThan(2);
   });
 
+  it("falls back to nearest airports when no airport is inside the selected radius", async () => {
+    const service = new AirportContextService(
+      config(),
+      createAirportFetch() as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+
+    const result = await service.getNearbyAirports({
+      latitude: 0,
+      longitude: 0,
+      radiusKm: 1
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.airports).toHaveLength(3);
+    expect(result.limitations[0]).toContain("No airports were within 1 km");
+  });
+
   it("falls back to nearest airports when no airport is inside the selected area", async () => {
     const service = new AirportContextService(
       config(),
@@ -210,14 +228,6 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",

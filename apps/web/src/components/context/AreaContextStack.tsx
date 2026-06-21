@@ -1,5 +1,4 @@
 import type { AnalysisAreaResult } from "@aisstream/shared";
-import { AirspaceContextPanel } from "./AirspaceContextPanel";
 import { AirportContextPanel } from "./AirportContextPanel";
 import { ConflictContextPanel } from "./ConflictContextPanel";
 import { FireContextPanel } from "./FireContextPanel";
@@ -14,7 +13,6 @@ export function AreaContextStack({ area }: AreaContextStackProps) {
   return (
     <div className="space-y-3">
       <AirportContextPanel area={area} />
-      <AirspaceContextPanel area={area} />
       <ConflictContextPanel area={area} />
       <SatelliteContextPanel area={area} />
       <MarineWeatherPanel area={area} />

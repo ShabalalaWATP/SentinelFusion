@@ -6,10 +6,8 @@ import { useAnalysisStore } from "../../stores/analysisStore";
 import { useAircraftIntelStore } from "../../stores/aircraftIntelStore";
 import { useAirportContextStore } from "../../stores/airportContextStore";
 import { useFeedFilterStore } from "../../stores/feedFilterStore";
-import { useFiledRouteContextStore } from "../../stores/filedRouteContextStore";
 import { useAircraftStore } from "../../stores/aircraftStore";
 import { useMapStore } from "../../stores/mapStore";
-import { useSanctionsScreeningStore } from "../../stores/sanctionsScreeningStore";
 import { useVesselIntelStore } from "../../stores/vesselIntelStore";
 import { useVesselStore } from "../../stores/vesselStore";
 import { VesselDrawer } from "./VesselDrawer";
@@ -102,18 +100,6 @@ function resetStores(): void {
     refreshAircraft: async () => undefined
   });
   useAircraftIntelStore.setState({ errors: {}, results: {}, statuses: {} });
-  useFiledRouteContextStore.setState({
-    errors: {},
-    results: {},
-    statuses: {},
-    refresh: async () => undefined
-  });
-  useSanctionsScreeningStore.setState({
-    errors: {},
-    results: {},
-    statuses: {},
-    refresh: async () => undefined
-  });
   useVesselIntelStore.setState({ errors: {}, results: {}, statuses: {} });
 }
 

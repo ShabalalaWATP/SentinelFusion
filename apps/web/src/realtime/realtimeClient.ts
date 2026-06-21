@@ -16,7 +16,7 @@ export type RealtimeClient = {
   connect(handlers: RealtimeHandlers): () => void;
 };
 
-export function createRealtimeClient(url: string): RealtimeClient {
+function createRealtimeClient(url: string): RealtimeClient {
   return {
     connect(handlers) {
       handlers.onStatus("connecting");

@@ -2,7 +2,7 @@ import type { AnalysisRequest, AnalysisSummary } from "@aisstream/shared";
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type AnalysisStatus = "idle" | "loading" | "success" | "error";
+type AnalysisStatus = "idle" | "loading" | "success" | "error";
 
 export type AnalysisState = {
   question: string;

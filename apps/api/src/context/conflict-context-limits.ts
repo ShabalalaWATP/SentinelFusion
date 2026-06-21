@@ -1,9 +1,9 @@
 import type { TrafficAreaBounds } from "@aisstream/shared";
 
-export const maxConflictContextLatitudeSpan = 40;
-export const maxConflictContextLongitudeSpan = 80;
-export const maxConflictContextAreaDegrees = 1600;
-export const conflictContextCacheBucketDegrees = 0.25;
+const maxConflictContextLatitudeSpan = 40;
+const maxConflictContextLongitudeSpan = 80;
+const maxConflictContextAreaDegrees = 1600;
+const conflictContextCacheBucketDegrees = 0.25;
 export const maxConflictJsonBytes = 2_000_000;
 export const maxConflictProviderRows = 1000;
 

@@ -2,7 +2,7 @@ import type { AirportContextResponse, TrafficAreaBounds } from "@aisstream/share
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type AirportContextStatus = "idle" | "loading" | "success" | "error";
+type AirportContextStatus = "idle" | "loading" | "success" | "error";
 
 export type AirportContextState = {
   areaStatus: AirportContextStatus;

@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { Vessel } from "@aisstream/shared";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
-import type { ISanctionsScreeningService } from "../src/domain/interfaces";
+import type { IVesselIntelService } from "../src/domain/interfaces";
 
 const config: AppConfig = {
   nodeEnv: "test",
@@ -42,14 +42,6 @@ const config: AppConfig = {
   airportContextCacheSeconds: 86400,
   airportContextMaxResults: 8,
   airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
@@ -89,101 +81,89 @@ afterEach(async () => {
 });
 
 describe("vessel routes", () => {
-  it("screens a selected vessel from server-side vessel state", async () => {
-    let capturedVessel: Vessel | undefined;
-    const sanctionsScreeningService = createSanctionsScreeningService((input) => {
-      capturedVessel = input;
-    });
+  it("returns seeded vessel snapshots with stream metrics", async () => {
     app = await createApp(config, {
-      sanctionsScreeningService,
       seedVessels: [vessel],
       startStreams: false
     });
 
     const response = await app.inject({
       method: "GET",
-      url: `/vessels/${vessel.id}/sanctions-screening`
+      url: "/vessels",
+      headers: { origin: "http://localhost:5173" }
     });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      status: "not_configured",
-      subject: {
-        vesselId: vessel.id,
-        mmsi: vessel.mmsi
+      vessels: [{ id: vessel.id, mmsi: vessel.mmsi }],
+      metrics: {
+        liveVessels: 1,
+        trackedVessels: 1
+      },
+      stream: {
+        mode: "mock"
       }
     });
-    expect(capturedVessel?.name).toBe(vessel.name);
   });
 
-  it("guards sanctions screening when the analysis token is configured", async () => {
-    let invocations = 0;
-    const sanctionsScreeningService = createSanctionsScreeningService(() => {
-      invocations += 1;
-    });
+  it("guards vessel intel when the analysis token is configured", async () => {
     app = await createApp(
       {
         ...config,
         analysisApiToken: "0123456789abcdef"
       },
       {
-        sanctionsScreeningService,
         seedVessels: [vessel],
         startStreams: false
       }
     );
 
-    const missingTokenResponse = await app.inject({
-      method: "GET",
-      url: `/vessels/${vessel.id}/sanctions-screening`
-    });
-    const wrongTokenResponse = await app.inject({
-      method: "GET",
-      url: `/vessels/${vessel.id}/sanctions-screening`,
-      headers: { authorization: "Bearer wrong-token" }
-    });
-    const authorisedResponse = await app.inject({
-      method: "GET",
-      url: `/vessels/${vessel.id}/sanctions-screening`,
-      headers: { "x-analysis-token": "0123456789abcdef" }
+    const response = await app.inject({
+      method: "POST",
+      url: `/vessels/${vessel.id}/intel`
     });
 
-    expect(missingTokenResponse.statusCode).toBe(401);
-    expect(wrongTokenResponse.statusCode).toBe(401);
-    expect(authorisedResponse.statusCode).toBe(200);
-    expect(invocations).toBe(1);
+    expect(response.statusCode).toBe(401);
+  });
+
+  it("returns vessel intel for a selected vessel", async () => {
+    const intelService: IVesselIntelService = {
+      async enrich(target) {
+        return {
+          status: "ok",
+          mode: "mock",
+          model: "test",
+          vesselId: target.id,
+          summary: "Vessel web intel completed.",
+          facts: [`MMSI ${target.mmsi}.`],
+          sources: [],
+          limitations: ["Test service."],
+          generatedAt: timestamp
+        };
+      }
+    };
+    app = await createApp(
+      {
+        ...config,
+        analysisApiToken: "0123456789abcdef"
+      },
+      {
+        vesselIntelService: intelService,
+        seedVessels: [vessel],
+        startStreams: false
+      }
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/vessels/${vessel.id}/intel`,
+      headers: { authorization: "Bearer 0123456789abcdef" }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      vesselId: vessel.id,
+      summary: "Vessel web intel completed."
+    });
   });
 });
-
-function createSanctionsScreeningService(onScreen?: (input: Vessel) => void): ISanctionsScreeningService {
-  return {
-    async screenVessel(input) {
-      onScreen?.(input);
-      return {
-        status: "not_configured",
-        mode: "off",
-        provider: "opensanctions",
-        source: {
-          title: "OpenSanctions API",
-          url: "https://www.opensanctions.org/docs/api/",
-          attribution: "Configured provider required"
-        },
-        generatedAt: timestamp,
-        cached: false,
-        subject: {
-          vesselId: input.id,
-          mmsi: input.mmsi,
-          name: input.name,
-          shipType: input.shipType
-        },
-        matches: [],
-        summary: {
-          matchCount: 0,
-          reviewRequiredCount: 0
-        },
-        limitations: ["Screening provider is not configured."],
-        error: "Sanctions screening provider is not configured."
-      };
-    }
-  };
-}

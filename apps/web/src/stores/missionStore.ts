@@ -98,19 +98,6 @@ export const useMissionStore = create<MissionState>((set) => ({
     }))
 }));
 
-export function toWatchRuleFromRoutine(routine: MissionRoutine): TrafficWatchRule {
-  return {
-    id: `${routine.area.id}-${routine.domain}`,
-    query: routine.query,
-    label: `${domainLabel(routine.domain)} in ${routine.area.name}`,
-    domain: routine.domain,
-    area: routine.area,
-    areaOnly: false,
-    active: routine.active,
-    createdAt: routine.createdAt
-  };
-}
-
 function persistRoutines(routines: MissionRoutine[]): MissionRoutine[] {
   writeLocalJson(storageKey, routines);
   return routines;

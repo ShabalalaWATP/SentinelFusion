@@ -24,18 +24,13 @@ Implemented:
 - Server-side Open-Meteo marine weather context for analysed areas, with shared typed contracts, bounded cache, `ok`/`not_configured`/`error` states, and a collapsible area-result panel.
 - Server-side NASA FIRMS active-fire context for analysed areas, with `FIRMS_MAP_KEY` held in the API, strict bounds validation, antimeridian-aware provider requests, capped detections, `ok`/`not_configured`/`error` states, and a toggleable fire-points map overlay.
 - Server-side OurAirports airport/runway context for analysed areas and selected aircraft, with fixed open-data CSV URLs, bounded parsing, server-resolved selected-aircraft position lookups, typed `ok`/`not_configured`/`error` states, and collapsible area/aircraft panels.
-- Server-side NOTAM/TFR airspace provider contract for analysed areas, with strict bounds validation, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, and a collapsible area-result panel that does not claim live airspace notices without authorised provider access.
-- Server-side filed-route provider contract for selected aircraft, with server-resolved aircraft lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, and a collapsible aircraft panel that separates filed/planned route data from observed tracks.
-- Server-side sanctions and ownership screening provider contract for selected vessels, with server-resolved vessel lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, false-positive warnings, source-link safety, and a collapsible vessel panel that presents matches as review leads.
 - Server-side NASA GIBS satellite snapshot context for analysed areas, with strict bounds validation, fixed-host WMS URL construction, typed `ok`/`not_configured`/`error` states, and a collapsible area panel with image, source, date, layer, and limitations.
 - Server-side ACLED conflict/protest context for analysed areas, with API-only credentials, OAuth token support, strict bounds validation, capped provider responses, typed `ok`/`not_configured`/`error` states, a collapsible area panel, and a toggleable conflict-events map overlay.
+- Paid provider-contract slices for airspace notices, filed flight routes, and sanctions/ownership screening were removed on 2026-06-21 because this project will not pay for those providers.
 - Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
 
 Still planned:
 
-- Credentialed filed-route adapters when licensed FlightAware, Flightradar24, or equivalent provider access is available.
-- Credentialed airspace notice adapters when authorised FAA/SWIM or licensed provider access is available.
-- Credentialed sanctions and ownership adapters when licensed OpenSanctions or custom provider access is available.
 - Higher-resolution satellite imagery adapters when Sentinel Hub, commercial SAR, or equivalent provider access is available.
 - Server-side provider aggregation for future OSINT providers, persisted domain defaults, and optional higher-volume conflict/news providers where licensing allows.
 
@@ -82,7 +77,7 @@ Core controls:
   - Speed bands
   - Callsign/registration/hex text search
   - Provider/source status
-- Route mode should clearly distinguish `Observed track` from `Filed route`.
+- Route mode should clearly show observed AIS and flight tracks reconstructed from received position updates.
 
 Avoid overwhelming the user:
 
@@ -394,4 +389,4 @@ The flight-tracking expansion is complete only when:
 
 ## Current Next Step
 
-Select the next high-value improvement goal or implement credentialed provider adapters where authorised credentials are available. Domain defaults and mobile layout checks remain as Stage 4.7 polish.
+Select the next high-value improvement goal that uses live no-key, already-keyed, or explicitly approved providers. Domain defaults and mobile layout checks remain as Stage 4.7 polish.

@@ -24,7 +24,7 @@ export function selectRouteVessels(
   return [...limitedRoutes, selectedRoute];
 }
 
-export function hasRouteTrack(vessel: Pick<Vessel, "track">): boolean {
+function hasRouteTrack(vessel: Pick<Vessel, "track">): boolean {
   return vessel.track.length > 1;
 }
 

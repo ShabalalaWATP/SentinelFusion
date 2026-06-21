@@ -117,6 +117,50 @@ describe("flight provider clients", () => {
     expect(headers?.get("authorization")).toBe("Bearer test-opensky-token");
   });
 
+  it("refreshes OpenSky OAuth credentials once after an authenticated 401", async () => {
+    const fetchMock = vi.fn(async (input: URL | string) => {
+      if (String(input).includes("auth.opensky-network.org")) {
+        return new Response(
+          JSON.stringify({
+            access_token: `token-${fetchMock.mock.calls.length}`,
+            expires_in: 1800
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+
+      const stateCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes("/states/all"));
+      if (stateCalls.length === 1) {
+        return new Response("", { status: 401 });
+      }
+
+      return new Response(
+        JSON.stringify({
+          time: 1760000000,
+          states: [["43c6f1", "RFR7182 ", "United Kingdom", 1760000000, 1760000000, -1.75, 51.2]]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new OpenSkyFlightTrackingClient(
+      baseConfig({
+        openSkyClientId: "client-id",
+        openSkyClientSecret: "client-secret",
+        provider: "opensky"
+      })
+    );
+    const aircraft = await firstAircraftBatch(client);
+    const stateAuthorizations = fetchMock.mock.calls
+      .filter(([input]) => String(input).includes("/states/all"))
+      .map(([, init]) => (init?.headers as Headers | undefined)?.get("authorization"));
+
+    expect(aircraft).toHaveLength(1);
+    expect(stateAuthorizations).toHaveLength(2);
+    expect(stateAuthorizations[0]).not.toEqual(stateAuthorizations[1]);
+  });
+
   it("surfaces OpenSky retry-after guidance when rate limited", async () => {
     const fetchMock = vi.fn(async () =>
       new Response("", {
@@ -132,6 +176,43 @@ describe("flight provider clients", () => {
     const message = await firstErrorMessage(client);
 
     expect(message).toBe("OpenSky rate limit exhausted; retrying after 120 seconds.");
+  });
+
+  it("uses default and absolute retry-after guidance for OpenSky rate limits", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-21T10:00:00.000Z"));
+    const defaultFetch = vi.fn(async () => new Response("", { status: 429 }));
+    vi.stubGlobal("fetch", defaultFetch);
+
+    const defaultBackoff = firstErrorMessage(new OpenSkyFlightTrackingClient(baseConfig({ provider: "opensky" })));
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(defaultBackoff).resolves.toBe(
+      "OpenSky rate limit exhausted; retrying after 60 seconds."
+    );
+
+    const absoluteFetch = vi.fn(async () =>
+      new Response("", {
+        status: 429,
+        headers: { "retry-after": "Sun, 21 Jun 2026 10:03:00 GMT" }
+      })
+    );
+    vi.stubGlobal("fetch", absoluteFetch);
+
+    const absoluteBackoff = firstErrorMessage(new OpenSkyFlightTrackingClient(baseConfig({ provider: "opensky" })));
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(absoluteBackoff).resolves.toBe(
+      "OpenSky rate limit exhausted; retrying after 180 seconds."
+    );
+    vi.useRealTimers();
+  });
+
+  it("surfaces non-rate-limit OpenSky provider failures", async () => {
+    const fetchMock = vi.fn(async () => new Response("", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(firstErrorMessage(new OpenSkyFlightTrackingClient(baseConfig({ provider: "opensky" })))).resolves.toBe(
+      "OpenSky returned HTTP 503"
+    );
   });
 
   it("uses ADS-B Exchange api-auth header and normalises v2 aircraft", async () => {
@@ -268,14 +349,6 @@ function baseConfig({
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",

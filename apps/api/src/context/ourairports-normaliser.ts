@@ -4,7 +4,7 @@ export type AirportRecord = Omit<
   AirportContextResponse["airports"][number],
   "bearingDegrees" | "distanceKm" | "runways"
 >;
-export type RunwayRecord = AirportContextResponse["airports"][number]["runways"][number];
+type RunwayRecord = AirportContextResponse["airports"][number]["runways"][number];
 
 export type OurAirportsDataset = {
   airports: AirportRecord[];

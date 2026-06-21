@@ -8,7 +8,6 @@ import {
   toSelectedAnalysisIntel
 } from "../../analysis/analysisIntelContext";
 import { AircraftList, AircraftSummary } from "../aircraft/AircraftDetails";
-import { FiledRoutePanel } from "../aircraft/FiledRoutePanel";
 import { AircraftIntelPanel } from "../aircraft/AircraftIntelPanel";
 import { AirportContextPanel } from "../context/AirportContextPanel";
 import {
@@ -23,7 +22,6 @@ import { TrafficTrackingControls } from "../map/TrafficTrackingControls";
 import { MilitaryIntelPanel } from "../military/MilitaryIntelPanel";
 import { RoutePanel } from "../routes/RoutePanel";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { SanctionsScreeningPanel } from "./SanctionsScreeningPanel";
 import { VesselBadges } from "./VesselBadges";
 import { VesselIntelPanel } from "./VesselIntelPanel";
 import {
@@ -196,7 +194,6 @@ export function VesselDrawer({ activePanel, onPanelChange }: VesselDrawerProps) 
             <AircraftSummary aircraft={selectedAircraft} />
             <TrafficTrackingControls domain="aircraft" target={selectedAircraft} />
             <AirportContextPanel aircraft={selectedAircraft} />
-            <FiledRoutePanel aircraft={selectedAircraft} />
             <AircraftIntelPanel aircraft={selectedAircraft} />
             <AreaAnalysisForm
               analysis={analysis}
@@ -272,7 +269,6 @@ function VesselSummary({ vessel }: VesselSummaryProps) {
       </div>
 
       <DetailGrid vessel={vessel} />
-      <SanctionsScreeningPanel vessel={vessel} />
       <VesselIntelPanel vessel={vessel} />
     </div>
   );

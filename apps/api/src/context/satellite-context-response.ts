@@ -5,7 +5,7 @@ const gibsBaseUrl = "https://gibs.earthdata.nasa.gov";
 const gibsDocsUrl = "https://nasa-gibs.github.io/gibs-api-docs/";
 const imageFormat = "image/jpeg";
 
-export function satelliteProviderSource(
+function satelliteProviderSource(
   provider: AppConfig["satelliteContextProvider"]
 ): SatelliteContextResponse["source"] {
   if (provider === "custom") {

@@ -3,7 +3,8 @@ import { request as httpRequest } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
-import type { Vessel } from "@aisstream/shared";
+import type { Aircraft, Vessel } from "@aisstream/shared";
+import WebSocket from "ws";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
 import type { IVesselIntelService } from "../src/domain/interfaces";
@@ -34,14 +35,6 @@ const config: AppConfig = {
   firmsMaxDetections: 150,
   airportContextMode: "mock", airportContextTimeoutMs: 10000,
   airportContextCacheSeconds: 86400, airportContextMaxResults: 8, airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
@@ -70,6 +63,28 @@ const vessel: Vessel = {
   riskLevel: "low",
   lastUpdated: timestamp,
   track: [{ longitude: 1.3, latitude: 51.95, timestamp }]
+};
+const aircraft: Aircraft = {
+  id: "icao24-43c6f1",
+  icao24: "43c6f1",
+  callsign: "RFR7182",
+  registration: "ZZ343",
+  aircraftType: "Airbus A400M Atlas",
+  operator: "Royal Air Force",
+  longitude: -1.1,
+  latitude: 50.8,
+  altitudeFt: 18000,
+  groundSpeedKt: 310,
+  trackDegrees: 138,
+  verticalRateFpm: 300,
+  squawk: "7001",
+  emergency: false,
+  onGround: false,
+  classification: "military",
+  riskLevel: "medium",
+  source: "mock",
+  lastUpdated: timestamp,
+  track: [{ longitude: -1.1, latitude: 50.8, altitudeFt: 18000, timestamp }]
 };
 
 let app: FastifyInstance | undefined;
@@ -323,6 +338,29 @@ describe("api app", () => {
       probeWebSocketUpgrade(address.port, "https://example.invalid")
     ).resolves.toBe("response:403");
   });
+
+  it("sends an aircraft snapshot when an allowed WebSocket client connects", async () => {
+    app = await createApp(config, {
+      seedAircraft: [aircraft],
+      startStreams: false
+    });
+    await app.listen({ host: "127.0.0.1", port: 0 });
+    const address = app.server.address() as AddressInfo;
+
+    const message = await readWebSocketMessage(
+      `ws://127.0.0.1:${address.port}/ws/aircraft`,
+      "http://localhost:5173"
+    );
+
+    expect(message).toMatchObject({
+      kind: "snapshot",
+      aircraft: [{ id: aircraft.id, classification: "military" }],
+      metrics: {
+        liveAircraft: 1,
+        militaryAircraft: 1
+      }
+    });
+  });
 });
 
 function probeWebSocketUpgrade(port: number, origin: string): Promise<string> {
@@ -358,5 +396,25 @@ function probeWebSocketUpgrade(port: number, origin: string): Promise<string> {
       resolve(`error:${error.message}`);
     });
     request.end();
+  });
+}
+
+function readWebSocketMessage(url: string, origin: string): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url, { origin });
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error("Timed out waiting for WebSocket snapshot."));
+    }, 2000);
+
+    socket.once("message", (data) => {
+      clearTimeout(timeout);
+      socket.close();
+      resolve(JSON.parse(data.toString()) as Record<string, unknown>);
+    });
+    socket.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
   });
 }

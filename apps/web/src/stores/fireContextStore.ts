@@ -2,7 +2,7 @@ import type { FireContextResponse, TrafficAreaBounds } from "@aisstream/shared";
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type FireContextStatus = "idle" | "loading" | "success" | "error";
+type FireContextStatus = "idle" | "loading" | "success" | "error";
 
 export type FireContextState = {
   status: FireContextStatus;

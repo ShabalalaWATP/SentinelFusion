@@ -10,7 +10,7 @@ export type AreaFocusRequest = Pick<AnalysisAreaResult, "bounds" | "id" | "name"
   requestedAt: number;
 };
 
-export type AreaSelection = AreaFocusRequest;
+type AreaSelection = AreaFocusRequest;
 export type MapDomainFilter = "all" | "vessels" | "aircraft";
 export type IntelligenceLayerId =
   | "airports"
@@ -22,7 +22,7 @@ export type IntelligenceLayerId =
   | "risk-zones"
   | "shipping-lanes";
 export type IntelligenceLayerState = Record<IntelligenceLayerId, boolean>;
-export type TrackedTarget = {
+type TrackedTarget = {
   id: string;
   domain: "vessel" | "aircraft";
   follow: boolean;

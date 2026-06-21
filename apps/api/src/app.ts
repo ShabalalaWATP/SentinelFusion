@@ -15,26 +15,20 @@ import { AircraftAnalyticsService } from "./analytics/aircraft-analytics-service
 import { VesselAnalyticsService } from "./analytics/vessel-analytics-service";
 import type { AppConfig } from "./config/environment";
 import { createLoggerOptions } from "./config/logger";
-import { AirspaceContextService } from "./context/airspace-context-service";
 import { AirportContextService } from "./context/airport-context-service";
-import { FiledRouteContextService } from "./context/filed-route-context-service";
 import { FireContextService } from "./context/fire-context-service";
 import { ConflictContextService } from "./context/conflict-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
-import { SanctionsScreeningService } from "./context/sanctions-screening-service";
 import { SatelliteContextService } from "./context/satellite-context-service";
 import type {
   IAisStreamClient,
-  IAirspaceContextService,
   IAirportContextService,
   IFlightTrackingClient,
   IAnalysisAgentService,
   IAircraftIntelService,
-  IFlightRouteContextService,
   IFireContextService,
   IConflictContextService,
   IMarineWeatherService,
-  ISanctionsScreeningService,
   ISatelliteContextService,
   IVesselIntelService
 } from "./domain/interfaces";
@@ -50,7 +44,6 @@ import { OpenAiAircraftIntelService } from "./intel/openai-aircraft-intel-servic
 import { OpenAiVesselIntelService } from "./intel/openai-vessel-intel-service";
 import { RealtimeBroadcaster } from "./realtime/realtime-broadcaster";
 import { registerAircraftRoutes } from "./routes/aircraft";
-import { registerAirspaceContextRoute } from "./routes/airspace-context";
 import { registerAnalysisRoute } from "./routes/analysis";
 import { registerAirportContextRoute } from "./routes/airport-context";
 import { registerFireContextRoute } from "./routes/fire-context";
@@ -67,13 +60,10 @@ import { registerVesselStream } from "./ws/vessel-stream";
 type CreateAppOptions = {
   analysisService?: IAnalysisAgentService;
   aircraftIntelService?: IAircraftIntelService;
-  airspaceContextService?: IAirspaceContextService;
   airportContextService?: IAirportContextService;
-  filedRouteContextService?: IFlightRouteContextService;
   fireContextService?: IFireContextService;
   conflictContextService?: IConflictContextService;
   marineWeatherService?: IMarineWeatherService;
-  sanctionsScreeningService?: ISanctionsScreeningService;
   satelliteContextService?: ISatelliteContextService;
   vesselIntelService?: IVesselIntelService;
   seedAircraft?: Aircraft[];
@@ -106,19 +96,13 @@ export async function createApp(
   const analysisService = options.analysisService ?? createAnalysisService(config);
   const aircraftIntelService =
     options.aircraftIntelService ?? createAircraftIntelService(config);
-  const airspaceContextService =
-    options.airspaceContextService ?? createAirspaceContextService(config);
   const airportContextService =
     options.airportContextService ?? createAirportContextService(config);
-  const filedRouteContextService =
-    options.filedRouteContextService ?? createFiledRouteContextService(config);
   const fireContextService = options.fireContextService ?? createFireContextService(config);
   const conflictContextService =
     options.conflictContextService ?? createConflictContextService(config);
   const marineWeatherService =
     options.marineWeatherService ?? createMarineWeatherService(config);
-  const sanctionsScreeningService =
-    options.sanctionsScreeningService ?? createSanctionsScreeningService(config);
   const satelliteContextService =
     options.satelliteContextService ?? createSatelliteContextService(config);
   const vesselIntelService = options.vesselIntelService ?? createVesselIntelService(config);
@@ -143,9 +127,6 @@ export async function createApp(
   });
   await app.register(websocket);
   await registerHealthRoute(app, config);
-  await registerAirspaceContextRoute(app, {
-    service: airspaceContextService
-  });
   await registerAirportContextRoute(app, {
     service: airportContextService
   });
@@ -168,7 +149,6 @@ export async function createApp(
     getStreamStatus: () => flightStatus.snapshot(),
     intelService: aircraftIntelService,
     airportContextService,
-    filedRouteContextService,
     ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerAnalysisRoute(app, {
@@ -184,7 +164,6 @@ export async function createApp(
     analytics,
     getStreamStatus: () => streamStatus.snapshot(),
     intelService: vesselIntelService,
-    sanctionsScreeningService,
     ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerFlightStatusRoute(app, () => flightStatus.snapshot());
@@ -319,10 +298,6 @@ function createVesselIntelService(config: AppConfig): IVesselIntelService {
   return new MockVesselIntelService();
 }
 
-function createSanctionsScreeningService(config: AppConfig): ISanctionsScreeningService {
-  return new SanctionsScreeningService(config);
-}
-
 function createSatelliteContextService(config: AppConfig): ISatelliteContextService {
   return new SatelliteContextService(config);
 }
@@ -337,14 +312,6 @@ function createAircraftIntelService(config: AppConfig): IAircraftIntelService {
 
 function createAirportContextService(config: AppConfig): IAirportContextService {
   return new AirportContextService(config);
-}
-
-function createFiledRouteContextService(config: AppConfig): IFlightRouteContextService {
-  return new FiledRouteContextService(config);
-}
-
-function createAirspaceContextService(config: AppConfig): IAirspaceContextService {
-  return new AirspaceContextService(config);
 }
 
 function createMarineWeatherService(config: AppConfig): IMarineWeatherService {

@@ -52,6 +52,41 @@ describe("vessel repository", () => {
     expect(repository.getById("mmsi-200000001")).toBeUndefined();
     expect(repository.getById("mmsi-200000002")).toBeTruthy();
   });
+
+  it("keeps vessels with invalid timestamps during stale pruning", () => {
+    const repository = new InMemoryVesselRepository();
+
+    repository.upsert(
+      sampleVessel({
+        id: "mmsi-invalid-time",
+        mmsi: "999000001",
+        lastUpdated: "not-a-date"
+      })
+    );
+
+    expect(repository.prune(now)).toBe(0);
+    expect(repository.getById("mmsi-invalid-time")).toBeTruthy();
+  });
+
+  it("prunes excess vessels over the retention limit", () => {
+    const repository = new InMemoryVesselRepository();
+
+    for (let index = 0; index < 18005; index += 1) {
+      repository.upsert(
+        sampleVessel({
+          id: `mmsi-${String(300000000 + index)}`,
+          mmsi: String(300000000 + index),
+          lastUpdated: new Date(now.getTime() + index * 1000).toISOString()
+        })
+      );
+    }
+
+    const removed = repository.prune(now);
+
+    expect(removed).toBeGreaterThan(0);
+    expect(repository.getById("mmsi-300000000")).toBeUndefined();
+    expect(repository.getById("mmsi-300018004")).toBeTruthy();
+  });
 });
 
 function sampleVessel(overrides: Partial<Vessel> = {}): Vessel {

@@ -2,7 +2,7 @@ import type { VesselIntelResponse } from "@aisstream/shared";
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type VesselIntelStatus = "idle" | "loading" | "success" | "error";
+type VesselIntelStatus = "idle" | "loading" | "success" | "error";
 
 export type VesselIntelState = {
   activeVesselId: string | null;

@@ -1,4 +1,4 @@
-export const alertPresetIds = [
+const alertPresetIds = [
   "highRiskVessels",
   "classifiedVessels",
   "aircraftEmergencies",

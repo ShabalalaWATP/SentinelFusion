@@ -9,18 +9,21 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "corepack pnpm --filter @aisstream/shared build && corepack pnpm --filter @aisstream/api typecheck && corepack pnpm --filter @aisstream/web typecheck",
     "test": "corepack pnpm --filter @aisstream/shared build && corepack pnpm -r test",
+    "coverage": "corepack pnpm --filter @aisstream/shared build && corepack pnpm -r coverage",
+    "coverage:api": "corepack pnpm --filter @aisstream/shared build && corepack pnpm --filter @aisstream/api coverage",
+    "coverage:web": "corepack pnpm --filter @aisstream/shared build && corepack pnpm --filter @aisstream/web coverage",
     "check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@types/node": "^22.15.32",
+    "@vitest/coverage-v8": "3.2.6",
     "concurrently": "^10.0.3",
     "eslint": "^9.29.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.34.1",
-    "vitest": "^3.2.3"
+    "typescript-eslint": "^8.34.1"
   }
 }

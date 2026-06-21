@@ -2,7 +2,7 @@ import type { MarineWeatherResponse, TrafficAreaBounds } from "@aisstream/shared
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type MarineWeatherStatus = "idle" | "loading" | "success" | "error";
+type MarineWeatherStatus = "idle" | "loading" | "success" | "error";
 
 export type MarineWeatherState = {
   status: MarineWeatherStatus;

@@ -13,9 +13,9 @@ import type { AlertPresetSettings } from "./alertPresets";
 import { defaultAlertPresetSettings } from "./alertPresets";
 import type { DetectedAnomaly } from "./anomalyDetection";
 
-export type AlertSeverity = "critical" | "high" | "medium" | "low";
+type AlertSeverity = "critical" | "high" | "medium" | "low";
 export type AlertStatus = "active" | "acknowledged" | "dismissed";
-export type AlertEntityDomain = "vessel" | "aircraft" | "area";
+type AlertEntityDomain = "vessel" | "aircraft" | "area";
 
 export type AlertItem = {
   id: string;

@@ -106,14 +106,6 @@ const config: AppConfig = {
   airportContextCacheSeconds: 86400,
   airportContextMaxResults: 8,
   airportContextMaxRunwaysPerAirport: 4,
-  airspaceContextMode: "off",
-  airspaceContextMaxResults: 25,
-  flightRouteContextMode: "off",
-  flightRouteContextProvider: "flightaware",
-  flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
   satelliteContextMode: "live",
   satelliteContextProvider: "nasa-gibs",
   satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
@@ -259,6 +251,67 @@ describe("analysis services", () => {
     expect(bodyText).not.toContain(config.openaiApiKey);
   });
 
+  it("includes landmark context in OpenAI model input without leaking internal field names", async () => {
+    let requestBody: unknown;
+    const client: OpenAiClient = {
+      responses: {
+        async parse(body) {
+          requestBody = body;
+          return {
+            id: "resp_landmark",
+            output_parsed: {
+              summary: "Area traffic is close to a named naval base.",
+              riskLevel: "medium",
+              keyFindings: ["Nearby landmark context identifies Portsmouth Naval Base."],
+              recommendedActions: ["Monitor traffic near the naval base."],
+              evidence: ["Server context included nearby landmark context."],
+              limitations: ["Landmark matching is approximate."]
+            }
+          };
+        }
+      }
+    };
+
+    const result = await new OpenAiAnalysisAgentService(config, client).analyse({
+      ...context,
+      landmarkContext: {
+        matchedText: "portsmouth naval base",
+        reference: "question",
+        landmarks: [
+          {
+            id: "portsmouth-naval-base",
+            name: "Portsmouth Naval Base",
+            category: "naval_base",
+            aliases: ["HMNB Portsmouth"],
+            latitude: 50.812,
+            longitude: -1.105,
+            distanceNm: 1.4,
+            bearingDegrees: 270
+          }
+        ]
+      }
+    });
+    const modelInput = JSON.parse(
+      String((requestBody as { input?: unknown }).input)
+    ) as Record<string, unknown>;
+
+    expect(result.requestId).toBe("resp_landmark");
+    expect(modelInput.nearbyLandmarks).toMatchObject({
+      matchedText: "portsmouth naval base",
+      reference: "question",
+      landmarks: [
+        {
+          name: "Portsmouth Naval Base",
+          category: "naval_base",
+          position: { latitude: 50.812, longitude: -1.105 },
+          distanceNm: 1.4,
+          bearingDegrees: 270
+        }
+      ]
+    });
+    expect(JSON.stringify(modelInput)).not.toContain("landmarkContext");
+  });
+
   it("returns a structured not-configured response without an OpenAI key", async () => {
     const configWithoutKey: AppConfig = { ...config };
     delete configWithoutKey.openaiApiKey;
@@ -268,5 +321,103 @@ describe("analysis services", () => {
       status: "not_configured",
       mode: "live"
     });
+  });
+
+  it("derives fleet risk in fallback responses when no vessel or area is selected", async () => {
+    const configWithoutKey: AppConfig = { ...config };
+    delete configWithoutKey.openaiApiKey;
+    const highRiskVessel = { ...vessel, id: "mmsi-high", riskLevel: "high" as const };
+
+    const highRisk = await new OpenAiAnalysisAgentService(configWithoutKey).analyse({
+      ...context,
+      areaFocus: undefined,
+      selectedVessel: undefined,
+      vessels: [highRiskVessel]
+    });
+    const mediumRisk = await new OpenAiAnalysisAgentService(configWithoutKey).analyse({
+      ...context,
+      areaFocus: undefined,
+      selectedVessel: undefined,
+      vessels: [{ ...vessel, id: "mmsi-medium", riskLevel: "medium" as const }]
+    });
+    const lowRisk = await new OpenAiAnalysisAgentService(configWithoutKey).analyse({
+      ...context,
+      areaFocus: undefined,
+      selectedVessel: undefined,
+      vessels: []
+    });
+
+    expect(highRisk).toMatchObject({
+      status: "not_configured",
+      riskLevel: "high",
+      summary: "OpenAI analysis is not configured. Set OPENAI_API_KEY and ANALYSIS_MODE=live on the API service."
+    });
+    expect(mediumRisk.riskLevel).toBe("medium");
+    expect(lowRisk.riskLevel).toBe("low");
+    expect(highRisk.area).toBeUndefined();
+  });
+
+  it("returns successful OpenAI output without area-specific context", async () => {
+    const client: OpenAiClient = {
+      responses: {
+        async parse() {
+          return {
+            _request_id: "req_test",
+            output_parsed: {
+              summary: "Fleet picture is routine.",
+              riskLevel: "medium",
+              keyFindings: ["One military aircraft is nearby."],
+              recommendedActions: ["Monitor aircraft and vessel tracks."],
+              evidence: ["Server context contained one vessel and one aircraft."],
+              limitations: ["Live telemetry can be incomplete."]
+            }
+          };
+        }
+      }
+    };
+
+    const result = await new OpenAiAnalysisAgentService(config, client).analyse({
+      ...context,
+      areaFocus: undefined,
+      selectedVessel: undefined
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      mode: "live",
+      requestId: "req_test",
+      summary: "Fleet picture is routine."
+    });
+    expect(result.area).toBeUndefined();
+  });
+
+  it("falls back safely when OpenAI returns malformed output", async () => {
+    const client: OpenAiClient = {
+      responses: {
+        async parse() {
+          throw new Error("x".repeat(260));
+        }
+      }
+    };
+
+    const result = await new OpenAiAnalysisAgentService(config, client).analyse(context);
+
+    expect(result).toMatchObject({
+      status: "error",
+      mode: "live",
+      summary: "1 vessels and 1 aircraft are currently inside Portsmouth. OpenAI analysis was not completed.",
+      riskLevel: "low",
+      keyFindings: [
+        "1 vessels are inside Portsmouth.",
+        "1 aircraft are inside Portsmouth.",
+        "0 area vessels are high risk, 0 vessels are military, 1 aircraft are military, and 0 aircraft are emergency flagged."
+      ],
+      recommendedActions: [
+        "Use local vessel metrics for immediate triage.",
+        "Check OpenAI API connectivity, credentials, and model configuration."
+      ]
+    });
+    expect(result.limitations[0]).toHaveLength(240);
+    expect(result.area).toMatchObject({ id: "portsmouth", count: 1, aircraftCount: 1 });
   });
 });

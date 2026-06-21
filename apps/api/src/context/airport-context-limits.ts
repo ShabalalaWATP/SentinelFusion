@@ -1,8 +1,8 @@
 import type { TrafficAreaBounds } from "@aisstream/shared";
 
-export const maxAirportContextLatitudeSpan = 45;
-export const maxAirportContextLongitudeSpan = 90;
-export const maxAirportContextAreaDegrees = 2500;
+const maxAirportContextLatitudeSpan = 45;
+const maxAirportContextLongitudeSpan = 90;
+const maxAirportContextAreaDegrees = 2500;
 export const maxAirportsCsvBytes = 20_000_000;
 export const maxRunwaysCsvBytes = 8_000_000;
 export const maxAirportCsvRows = 120_000;

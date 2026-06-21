@@ -77,6 +77,34 @@ describe("satellite context service", () => {
     expect(result.error).toContain("not configured");
   });
 
+  it("returns not configured when a live satellite provider is not implemented", async () => {
+    const service = new SatelliteContextService(
+      config({ satelliteContextProvider: "future-provider" as never }),
+      () => new Date(generatedAt)
+    );
+
+    const result = await service.getAreaSnapshot(area);
+
+    expect(result.status).toBe("not_configured");
+    expect(result.provider).toBe("future-provider");
+    expect(result.snapshot).toBeUndefined();
+  });
+
+  it("rejects antimeridian-crossing satellite areas before provider URL construction", async () => {
+    const service = new SatelliteContextService(config(), () => new Date(generatedAt));
+
+    const result = await service.getAreaSnapshot({
+      south: 1,
+      west: 170,
+      north: 2,
+      east: -170
+    });
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("antimeridian");
+    expect(result.snapshot).toBeUndefined();
+  });
+
   it("returns an error state for over-large areas before provider URL construction", async () => {
     const service = new SatelliteContextService(config(), () => new Date(generatedAt));
 
@@ -131,14 +159,6 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
-    airspaceContextMode: "off",
-    airspaceContextMaxResults: 25,
-    flightRouteContextMode: "off",
-    flightRouteContextProvider: "flightaware",
-    flightRouteContextMaxWaypoints: 60,
-    sanctionsContextMode: "off",
-    sanctionsContextProvider: "opensanctions",
-    sanctionsContextMaxResults: 10,
     satelliteContextMode: "live",
     satelliteContextProvider: "nasa-gibs",
     satelliteContextLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",

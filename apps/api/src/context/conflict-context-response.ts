@@ -1,6 +1,6 @@
 import type { ConflictContextResponse, RiskLevel, TrafficAreaBounds } from "@aisstream/shared";
 
-export const acledProviderSource: ConflictContextResponse["source"] = {
+const acledProviderSource: ConflictContextResponse["source"] = {
   title: "ACLED conflict and protest events",
   url: "https://acleddata.com/api-documentation/acled-endpoint",
   attribution: "Conflict and protest data by ACLED"

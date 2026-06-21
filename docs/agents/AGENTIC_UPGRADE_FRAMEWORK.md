@@ -200,13 +200,13 @@ The Research Agent must:
 - Clearly separate facts, inferences, and recommendations.
 - Include links and dates for volatile information.
 - Avoid recommending scraping consumer radar or tracking sites unless the target explicitly permits it.
-- Look beyond AIS and aircraft feeds. Search for out-of-the-box OSINT layers that could enrich the product, including satellite fire detections, severe weather, ocean conditions, port disruption, sanctions and ownership data, conflict events, airspace notices, maritime incidents, satellite imagery, infrastructure risk, and public emergency feeds.
+- Look beyond AIS and aircraft feeds. Search for out-of-the-box OSINT layers that could enrich the product, prioritising live no-key, already-keyed, open-data, or explicitly approved providers such as satellite fire detections, severe weather, ocean conditions, port disruption, conflict events, maritime incidents, satellite imagery, infrastructure risk, and public emergency feeds.
 - Treat NASA FIRMS, the Fire Information for Resource Management System, as a candidate OSINT enrichment source for active fire and thermal anomaly context near ports, routes, vessels, aircraft, and drawn areas.
 
 Each active Orchestrator improvement loop should use this research cadence:
 
 1. Search wave 1: direct competitors, open source projects, existing product gaps, and obvious provider/API options.
-2. Search wave 2: adjacent OSINT sources and unusual enrichment ideas, for example NASA FIRMS, weather/ocean feeds, sanctions, conflict events, public alerts, and remote-sensing data.
+2. Search wave 2: adjacent OSINT sources and unusual enrichment ideas, for example NASA FIRMS, weather/ocean feeds, conflict events, public alerts, and remote-sensing data.
 3. Search wave 3: official API, licence, pricing, quota, data-quality, and implementation feasibility checks for the shortlist.
 4. Optional waves 4 and 5: only if the first three waves found useful leads that need follow-up or contradiction checks.
 

@@ -41,7 +41,7 @@ export function AnalysisAccessTokenPanel() {
       />
       <p className="mt-2 text-xs leading-5 text-slate-400">
         Stored for this browser session only. Required when the API protects AI,
-        web-intel, sanctions, or ACLED conflict context routes.
+        web-intel, or ACLED conflict context routes.
       </p>
 
       <div className="mt-3 flex gap-2">

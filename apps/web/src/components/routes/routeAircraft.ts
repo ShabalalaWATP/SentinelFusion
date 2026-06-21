@@ -24,7 +24,7 @@ export function selectRouteAircraft(
   return [...limitedRoutes, selectedRoute];
 }
 
-export function hasAircraftTrack(aircraft: Pick<Aircraft, "track">): boolean {
+function hasAircraftTrack(aircraft: Pick<Aircraft, "track">): boolean {
   return aircraft.track.length > 1;
 }
 

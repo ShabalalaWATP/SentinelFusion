@@ -2,7 +2,7 @@ import type { SatelliteContextResponse, TrafficAreaBounds } from "@aisstream/sha
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type SatelliteContextStatus = "idle" | "loading" | "success" | "error";
+type SatelliteContextStatus = "idle" | "loading" | "success" | "error";
 
 export type SatelliteContextState = {
   status: SatelliteContextStatus;

@@ -2,7 +2,7 @@ import type { AircraftIntelResponse } from "@aisstream/shared";
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type AircraftIntelStatus = "idle" | "loading" | "success" | "error";
+type AircraftIntelStatus = "idle" | "loading" | "success" | "error";
 
 export type AircraftIntelState = {
   activeAircraftId: string | null;

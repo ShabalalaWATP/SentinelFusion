@@ -1,4 +1,4 @@
-import type { MapProjection, MapStyleId } from "@aisstream/shared";
+import type { MapStyleId } from "@aisstream/shared";
 import type { RasterLayerSpecification, StyleSpecification } from "maplibre-gl";
 import type {
   IMapStyleProvider,
@@ -154,7 +154,7 @@ const projections: MapProjectionDefinition[] = [
   }
 ];
 
-export class MapStyleRegistry implements IMapStyleProvider {
+class MapStyleRegistry implements IMapStyleProvider {
   listStyles(): MapStyleDefinition[] {
     return styles;
   }
@@ -169,6 +169,3 @@ export class MapStyleRegistry implements IMapStyleProvider {
 }
 
 export const mapStyleRegistry = new MapStyleRegistry();
-
-export const isKnownProjection = (projection: string): projection is MapProjection =>
-  projections.some((candidate) => candidate.id === projection);

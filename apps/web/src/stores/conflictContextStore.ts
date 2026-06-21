@@ -2,7 +2,7 @@ import type { ConflictContextResponse, TrafficAreaBounds } from "@aisstream/shar
 import { create } from "zustand";
 import { apiClient, type ApiClient } from "../api/apiClient";
 
-export type ConflictContextStatus = "idle" | "loading" | "success" | "error";
+type ConflictContextStatus = "idle" | "loading" | "success" | "error";
 
 export type ConflictContextState = {
   status: ConflictContextStatus;

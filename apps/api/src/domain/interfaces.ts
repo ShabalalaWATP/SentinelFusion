@@ -3,11 +3,8 @@ import type {
   AisStreamState,
   Aircraft,
   AircraftIntelResponse,
-  AirspaceContextResponse,
   AirportContextResponse,
-  FiledRouteContextResponse,
   AircraftMetrics,
-  SanctionsScreeningResponse,
   AircraftStreamEnvelope,
   AnalysisAircraftIntelContext,
   AnalysisRequest,
@@ -204,18 +201,6 @@ export interface IAirportContextService {
     label?: string;
     radiusKm?: number;
   }): Promise<AirportContextResponse>;
-}
-
-export interface IAirspaceContextService {
-  getAreaAirspace(bounds: TrafficAreaBounds): Promise<AirspaceContextResponse>;
-}
-
-export interface IFlightRouteContextService {
-  getFiledRoute(aircraft: Aircraft): Promise<FiledRouteContextResponse>;
-}
-
-export interface ISanctionsScreeningService {
-  screenVessel(vessel: Vessel): Promise<SanctionsScreeningResponse>;
 }
 
 export interface ISatelliteContextService {

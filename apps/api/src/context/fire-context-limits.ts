@@ -1,9 +1,9 @@
 import type { TrafficAreaBounds } from "@aisstream/shared";
 
-export const maxFireContextLatitudeSpan = 30;
-export const maxFireContextLongitudeSpan = 60;
-export const maxFireContextAreaDegrees = 900;
-export const fireContextCacheBucketDegrees = 0.1;
+const maxFireContextLatitudeSpan = 30;
+const maxFireContextLongitudeSpan = 60;
+const maxFireContextAreaDegrees = 900;
+const fireContextCacheBucketDegrees = 0.1;
 export const maxFirmsCsvBytes = 1_000_000;
 export const maxFirmsCsvRows = 2000;
 

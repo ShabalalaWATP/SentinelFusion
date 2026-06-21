@@ -114,6 +114,49 @@ describe("conflict context service", () => {
     expect(JSON.stringify(result)).not.toContain("oauth-token");
   });
 
+  it("reuses in-flight ACLED requests for the same bucketed area", async () => {
+    let releaseProvider: (() => void) | undefined;
+    const fetchMock = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        releaseProvider = resolve;
+      });
+      return jsonResponse(acledBody);
+    });
+    const service = new ConflictContextService(
+      config({ acledAccessToken: "test-acled-token" }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+
+    const first = service.getAreaConflict(bounds);
+    const second = service.getAreaConflict(bounds);
+    await vi.waitUntil(() => fetchMock.mock.calls.length === 1);
+    releaseProvider?.();
+    const results = await Promise.all([first, second]);
+
+    expect(results.map((result) => result.status)).toEqual(["ok", "ok"]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("evicts the oldest ACLED cache entry at the configured cache limit", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse(acledBody));
+    const service = new ConflictContextService(
+      config({
+        acledAccessToken: "test-acled-token",
+        conflictContextCacheMaxEntries: 1
+      }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+    const alternateBounds = { south: 45, west: 2, north: 46, east: 3 };
+
+    await service.getAreaConflict(bounds);
+    await service.getAreaConflict(alternateBounds);
+    await service.getAreaConflict(bounds);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("returns not configured when live ACLED has no token or credentials", async () => {
     const fetchMock = vi.fn();
     const service = new ConflictContextService(
@@ -179,6 +222,59 @@ describe("conflict context service", () => {
     expect(JSON.stringify(result)).not.toContain("test-acled-token");
   });
 
+  it("returns typed provider errors for ACLED body status and OAuth failures", async () => {
+    const providerStatusMock = vi.fn(async () => jsonResponse({ status: 500, data: [] }));
+    const providerService = new ConflictContextService(
+      config({ acledAccessToken: "test-acled-token" }),
+      providerStatusMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+
+    const providerStatus = await providerService.getAreaConflict(bounds);
+    expect(providerStatus).toMatchObject({
+      status: "error",
+      error: "ACLED returned status 500."
+    });
+
+    const oauthStatusMock = vi.fn(async () => new Response("Forbidden", { status: 403 }));
+    const oauthStatusService = new ConflictContextService(
+      config({ acledUsername: "analyst@example.test", acledPassword: "secret-password" }),
+      oauthStatusMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+    const oauthStatus = await oauthStatusService.getAreaConflict(bounds);
+    expect(oauthStatus).toMatchObject({
+      status: "error",
+      error: "ACLED OAuth returned HTTP 403."
+    });
+
+    const missingTokenMock = vi.fn(async () => jsonResponse({ expires_in: 3600 }));
+    const missingTokenService = new ConflictContextService(
+      config({ acledUsername: "analyst@example.test", acledPassword: "secret-password" }),
+      missingTokenMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+    const missingToken = await missingTokenService.getAreaConflict(bounds);
+    expect(missingToken).toMatchObject({
+      status: "error",
+      error: "ACLED OAuth response did not include an access token."
+    });
+  });
+
+  it("returns a safe provider error for invalid ACLED JSON objects", async () => {
+    const fetchMock = vi.fn(async () => new Response("null", { status: 200 }));
+    const service = new ConflictContextService(
+      config({ acledAccessToken: "test-acled-token" }),
+      fetchMock as unknown as typeof fetch,
+      () => new Date(generatedAt)
+    );
+
+    const result = await service.getAreaConflict(bounds);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toBe("ACLED response was not a JSON object.");
+  });
+
   it("rejects oversized ACLED responses before parsing", async () => {
     const fetchMock = vi.fn(async () => new Response("x".repeat(2_000_001), { status: 200 }));
     const service = new ConflictContextService(
@@ -239,14 +335,6 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     airportContextCacheSeconds: 86400,
     airportContextMaxResults: 8,
     airportContextMaxRunwaysPerAirport: 4,
-    airspaceContextMode: "off",
-    airspaceContextMaxResults: 25,
-    flightRouteContextMode: "off",
-    flightRouteContextProvider: "flightaware",
-    flightRouteContextMaxWaypoints: 60,
-    sanctionsContextMode: "off",
-    sanctionsContextProvider: "opensanctions",
-    sanctionsContextMaxResults: 10,
     conflictContextMode: "live",
     conflictContextProvider: "acled",
     conflictContextLookbackDays: 14,

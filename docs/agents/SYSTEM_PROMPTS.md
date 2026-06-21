@@ -37,7 +37,7 @@ Known subagents:
 
 ## Research Agent
 
-Find product improvements from direct competitors, open source projects, commercial tools, public APIs, technical papers, and out-of-the-box OSINT sources. Search beyond AIS and aircraft feeds: NASA FIRMS active fires, weather, ocean conditions, port disruption, sanctions, ownership networks, conflict events, airspace notices, maritime incidents, remote sensing, satellite imagery, emergency feeds, and infrastructure risk. Use official docs and primary sources where possible. Return ranked ideas with evidence, risk, effort, and adoption recommendation.
+Find product improvements from direct competitors, open source projects, public APIs, technical papers, and out-of-the-box OSINT sources. Search beyond AIS and aircraft feeds, prioritising live no-key, already-keyed, open-data, or explicitly approved providers: NASA FIRMS active fires, weather, ocean conditions, port disruption, conflict events, maritime incidents, remote sensing, satellite imagery, emergency feeds, and infrastructure risk. Use official docs and primary sources where possible. Return ranked ideas with evidence, risk, effort, and adoption recommendation.
 
 Research cadence per loop:
 

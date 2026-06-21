@@ -30,7 +30,7 @@ const booleanEnv = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
-export type { AisBoundingBox, TrustProxyConfig } from "./environment-parsers";
+export type { AisBoundingBox } from "./environment-parsers";
 
 const flightProviderSchema = z.enum(["mock", "opensky", "adsbexchange", "fr24", "flightaware"]);
 const firmsSourceSchema = z.enum([
@@ -85,14 +85,6 @@ const rawConfigSchema = z.object({
   AIRPORT_CONTEXT_CACHE_SECONDS: z.coerce.number().int().min(0).default(86400),
   AIRPORT_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(8),
   AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT: z.coerce.number().int().min(0).max(12).default(4),
-  AIRSPACE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
-  AIRSPACE_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(100).default(25),
-  FLIGHT_ROUTE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
-  FLIGHT_ROUTE_CONTEXT_PROVIDER: z.enum(["flightaware", "fr24", "custom"]).default("flightaware"),
-  FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS: z.coerce.number().int().min(1).max(120).default(60),
-  SANCTIONS_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
-  SANCTIONS_CONTEXT_PROVIDER: z.enum(["opensanctions", "custom"]).default("opensanctions"),
-  SANCTIONS_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(10),
   CONFLICT_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("live"),
   CONFLICT_CONTEXT_PROVIDER: z.enum(["acled"]).default("acled"),
   CONFLICT_CONTEXT_LOOKBACK_DAYS: z.coerce.number().int().min(1).max(90).default(14),
@@ -166,14 +158,6 @@ export type AppConfig = {
   airportContextCacheSeconds: number;
   airportContextMaxResults: number;
   airportContextMaxRunwaysPerAirport: number;
-  airspaceContextMode: "off" | "mock" | "live";
-  airspaceContextMaxResults: number;
-  flightRouteContextMode: "off" | "mock" | "live";
-  flightRouteContextProvider: "flightaware" | "fr24" | "custom";
-  flightRouteContextMaxWaypoints: number;
-  sanctionsContextMode: "off" | "mock" | "live";
-  sanctionsContextProvider: "opensanctions" | "custom";
-  sanctionsContextMaxResults: number;
   conflictContextMode?: "off" | "mock" | "live";
   conflictContextProvider?: "acled";
   conflictContextLookbackDays?: number;
@@ -291,14 +275,6 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     airportContextCacheSeconds: parsed.AIRPORT_CONTEXT_CACHE_SECONDS,
     airportContextMaxResults: parsed.AIRPORT_CONTEXT_MAX_RESULTS,
     airportContextMaxRunwaysPerAirport: parsed.AIRPORT_CONTEXT_MAX_RUNWAYS_PER_AIRPORT,
-    airspaceContextMode: parsed.AIRSPACE_CONTEXT_MODE,
-    airspaceContextMaxResults: parsed.AIRSPACE_CONTEXT_MAX_RESULTS,
-    flightRouteContextMode: parsed.FLIGHT_ROUTE_CONTEXT_MODE,
-    flightRouteContextProvider: parsed.FLIGHT_ROUTE_CONTEXT_PROVIDER,
-    flightRouteContextMaxWaypoints: parsed.FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS,
-    sanctionsContextMode: parsed.SANCTIONS_CONTEXT_MODE,
-    sanctionsContextProvider: parsed.SANCTIONS_CONTEXT_PROVIDER,
-    sanctionsContextMaxResults: parsed.SANCTIONS_CONTEXT_MAX_RESULTS,
     conflictContextMode: parsed.CONFLICT_CONTEXT_MODE,
     conflictContextProvider: parsed.CONFLICT_CONTEXT_PROVIDER,
     conflictContextLookbackDays: parsed.CONFLICT_CONTEXT_LOOKBACK_DAYS,

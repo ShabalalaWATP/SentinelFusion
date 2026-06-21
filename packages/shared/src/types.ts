@@ -16,12 +16,9 @@ import type {
   flightStreamStatusSchema
 } from "./aircraft-schemas";
 import type {
-  airspaceContextResponseSchema,
   airportContextResponseSchema,
-  filedRouteContextResponseSchema,
   fireContextResponseSchema,
-  marineWeatherResponseSchema,
-  sanctionsScreeningResponseSchema
+  marineWeatherResponseSchema
 } from "./context-schemas";
 import type { conflictContextResponseSchema } from "./conflict-context-schemas";
 import type { satelliteContextResponseSchema } from "./satellite-context-schemas";
@@ -86,11 +83,8 @@ export type VesselIntelSource = z.infer<typeof vesselIntelSourceSchema>;
 export type VesselIntelImage = z.infer<typeof vesselIntelImageSchema>;
 export type VesselIntelProfile = z.infer<typeof vesselIntelProfileSchema>;
 export type VesselIntelResponse = z.infer<typeof vesselIntelResponseSchema>;
-export type AirspaceContextResponse = z.infer<typeof airspaceContextResponseSchema>;
 export type AirportContextResponse = z.infer<typeof airportContextResponseSchema>;
-export type FiledRouteContextResponse = z.infer<typeof filedRouteContextResponseSchema>;
 export type MarineWeatherResponse = z.infer<typeof marineWeatherResponseSchema>;
 export type FireContextResponse = z.infer<typeof fireContextResponseSchema>;
 export type ConflictContextResponse = z.infer<typeof conflictContextResponseSchema>;
-export type SanctionsScreeningResponse = z.infer<typeof sanctionsScreeningResponseSchema>;
 export type SatelliteContextResponse = z.infer<typeof satelliteContextResponseSchema>;
