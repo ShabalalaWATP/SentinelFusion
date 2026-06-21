@@ -54,13 +54,13 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | API Agent | Provider boundary, env vars, route/service sequencing, and not-configured contracts. | None | Complete |
 | Software Engineering Agent | Architecture, module boundaries, SOLID plan, and phased implementation. | None | Complete |
 | Data Quality and Feed Reliability Agent | Feed confidence, stale-contact, provider-limit, and status-honesty requirements. | None | Complete for foundation slice |
-| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, and filed-route-contract slices implemented |
-| Code Quality Agent | Review each implementation slice after code changes. | None | Manual review complete for filed-route contract slice |
-| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | Manual review complete for filed-route contract slice |
-| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for filed-route contract slice |
+| Coding Agent | Implement one coherent slice at a time, starting with features 1, 2, and 3. | `apps/web/src`, shared schemas as needed | Foundation, marine, fire, airport, airspace-contract, filed-route-contract, and sanctions-contract slices implemented |
+| Code Quality Agent | Review each implementation slice after code changes. | None | Subagent review complete for sanctions contract slice |
+| Code Architecture Agent | Check boundaries, file sizes, SOLID fit, and dead-code risk. | None | File-size finding remediated for sanctions contract slice |
+| User Experience Agent | Verify rendered dashboard, panel navigation, layer filtering, and mobile fit. | None | Component/UI tests and browser smoke passed for sanctions contract slice |
 | Performance and Map Scalability Agent | Check map overlay caps and source update cost. | None | In progress |
-| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Manual review complete for filed-route contract slice |
-| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through filed-route contract slice |
+| Cyber Security Agent | Threat model now, formal static/dynamic review after each slice. | None | Subagent auth finding remediated for sanctions contract slice |
+| Documentation Agent | Keep plan, changelog, development story, security notes, and README current. | `docs`, `README.md` | Updated through sanctions contract slice |
 
 ## Stage Order
 
@@ -76,6 +76,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 - [x] Implementation: OurAirports airport/runway provider slice
 - [x] Implementation: NOTAM/TFR airspace provider-contract slice
 - [x] Implementation: filed-route provider-contract slice
+- [x] Implementation: sanctions and ownership provider-contract slice
 - [ ] Implementation: credentialed provider adapters
 - [ ] Final verification
 - [ ] Documentation
@@ -90,7 +91,7 @@ Users should be able to trust feed freshness, understand provider limits, turn r
 | Use NASA FIRMS only with server-side `FIRMS_MAP_KEY` and not-configured UI. | Research Agent, official docs | 8 | 4 | 5 | 8 | Adopted after provider foundation |
 | Use OurAirports for low-risk airport/runway enrichment. | Research Agent, official docs | 7 | 2 | 4 | 8 | Adopted |
 | Defer live NOTAM/TFR and filed-route enrichment until authorised provider credentials are available. | API Agent | 8 | 7 | 6 | 8 | Airspace and filed-route provider contracts implemented first |
-| Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Adopt with safeguards |
+| Treat sanctions matches as triage leads with confidence and false-positive warnings. | Cyber Security Agent | 8 | 6 | 6 | 8 | Provider contract implemented with auth guard and review-lead UI |
 | Start satellite snapshots with NASA GIBS before Sentinel Hub OAuth. | Research Agent | 7 | 4 | 5 | 7 | Trial |
 | Start conflict/protest overlays with public GDELT/UCDP data, ACLED as configured provider. | Research Agent | 7 | 5 | 5 | 7 | Trial |
 
@@ -270,9 +271,38 @@ Verification evidence:
 - In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, no Vite error overlay was present, and fresh console error/warning logs after reload were empty.
 - Manual quality and cyber review found no validated security issue: the route resolves selected aircraft from API state, accepts no provider URL, accepts no browser-supplied route/callsign/position claims, adds no browser secrets, keeps mock mode explicit, and live mode does not scrape or claim live filed-route data.
 
+## Sanctions Screening Contract Slice Evidence
+
+Implemented on 2026-06-21:
+
+- Shared `sanctionsScreeningResponseSchema` and `SanctionsScreeningResponse` type with provider status, source attribution, selected-vessel identity, confidence-scored matches, review status, source links, false-positive limitations, summary counts, and optional error messaging.
+- API-side `SanctionsScreeningService` with explicit `off`, `mock`, and `live` modes. Default and unimplemented live mode return a clear `not_configured` state until licensed OpenSanctions or custom screening provider access is configured.
+- `GET /vessels/:id/sanctions-screening` route resolved from server vessel state. The browser supplies only a vessel id, not vessel identity claims, provider URLs, or credentials.
+- The sanctions route uses the existing `ANALYSIS_API_TOKEN` guard when configured, matching other enrichment routes. Regression tests cover missing, wrong, and valid tokens and verify unauthorised requests do not invoke the screening service.
+- Web API client, `sanctionsScreeningStore`, and collapsible selected-vessel `SanctionsScreeningPanel`. The UI shows not-configured/error states, explicit mock review leads when enabled, attribution, limitations, source links, confidence, review status, and false-positive warnings without rendering provider text as HTML.
+- Environment example variables for `SANCTIONS_CONTEXT_MODE`, `SANCTIONS_CONTEXT_PROVIDER`, and `SANCTIONS_CONTEXT_MAX_RESULTS`. No `VITE_` provider config or secrets were added.
+
+Verification evidence:
+
+- `corepack pnpm --filter @aisstream/shared test -- context-schemas`: passed, shared schema tests now 24 tests.
+- `corepack pnpm --filter @aisstream/api test -- sanctions-screening-service vessel-routes`: passed, targeted API run reported 95 tests.
+- `corepack pnpm --filter @aisstream/web test -- SanctionsScreeningPanel sanctionsScreeningStore VesselDrawer`: passed, targeted web run reported 128 tests.
+- `corepack pnpm typecheck`: passed after tightening typed mock matches and after extracting environment parser helpers.
+- `corepack pnpm lint`: passed.
+- `corepack pnpm test`: passed, full suite reported shared 24 tests, API 95 tests, and web 128 tests.
+- `corepack pnpm build`: passed. Vite still reports the existing large JavaScript chunk warning.
+- `corepack pnpm audit --prod`: passed, no known production dependency vulnerabilities.
+- `git diff --check`: passed.
+- Secret-pattern scan for OpenAI, AISstream, FIRMS, flight, analysis-token, and generic API-key assignments: no matches.
+- File-size guard: touched sanctions and config files remain within the 350-line preference after extracting `environment-parsers.ts`; `environment.ts` is now 280 lines.
+- Local API smoke: `GET /vessels/{id}/sanctions-screening` for a current live vessel returned `status:"not_configured"`, `mode:"off"`, `provider:"opensanctions"`, zero matches, and the expected provider-not-configured error.
+- In-app Browser verification: app loaded at `http://localhost:5173/` with title `Sentinel Fusion`, map canvas rendered, no Vite error overlay was present, and fresh console error/warning logs after reload were empty.
+- Security review finding remediated: the sanctions route now uses the existing enrichment auth guard when `ANALYSIS_API_TOKEN` is configured, and tests prove unauthorised calls do not invoke the screening service.
+- Code quality review finding remediated: the touched `environment.ts` file no longer exceeds the preferred 350-line ceiling after moving generic parsing helpers to `environment-parsers.ts`.
+
 ## Risks And Blockers
 
-- Live NOTAM/TFR adapters, live filed-route adapters, sanctions API screening, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
+- Live NOTAM/TFR adapters, live filed-route adapters, live sanctions screening adapters, Sentinel Hub imagery, and ACLED may require accounts, paid plans, licences, or API keys. The first implementation must support not-configured states without pretending to provide live data.
 - Sanctions and conflict/protest matches can create false positives. UI wording must make these triage signals, not legal determinations.
 - New map layers can overwhelm the dashboard. All overlays need toggles, caps, and conservative defaults.
 - Provider APIs must be protected against SSRF by fixed base URLs, bounded coordinates, and strict response validation.

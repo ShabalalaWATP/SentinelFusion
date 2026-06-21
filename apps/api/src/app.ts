@@ -20,6 +20,7 @@ import { AirportContextService } from "./context/airport-context-service";
 import { FiledRouteContextService } from "./context/filed-route-context-service";
 import { FireContextService } from "./context/fire-context-service";
 import { MarineWeatherService } from "./context/marine-weather-service";
+import { SanctionsScreeningService } from "./context/sanctions-screening-service";
 import type {
   IAisStreamClient,
   IAirspaceContextService,
@@ -30,6 +31,7 @@ import type {
   IFlightRouteContextService,
   IFireContextService,
   IMarineWeatherService,
+  ISanctionsScreeningService,
   IVesselIntelService
 } from "./domain/interfaces";
 import { InMemoryAircraftRepository } from "./domain/aircraft-repository";
@@ -64,6 +66,7 @@ type CreateAppOptions = {
   filedRouteContextService?: IFlightRouteContextService;
   fireContextService?: IFireContextService;
   marineWeatherService?: IMarineWeatherService;
+  sanctionsScreeningService?: ISanctionsScreeningService;
   vesselIntelService?: IVesselIntelService;
   seedAircraft?: Aircraft[];
   seedVessels?: Vessel[];
@@ -104,6 +107,8 @@ export async function createApp(
   const fireContextService = options.fireContextService ?? createFireContextService(config);
   const marineWeatherService =
     options.marineWeatherService ?? createMarineWeatherService(config);
+  const sanctionsScreeningService =
+    options.sanctionsScreeningService ?? createSanctionsScreeningService(config);
   const vesselIntelService = options.vesselIntelService ?? createVesselIntelService(config);
 
   options.seedAircraft?.forEach((aircraft) => aircraftRepository.upsert(aircraft));
@@ -160,6 +165,7 @@ export async function createApp(
     analytics,
     getStreamStatus: () => streamStatus.snapshot(),
     intelService: vesselIntelService,
+    sanctionsScreeningService,
     ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerFlightStatusRoute(app, () => flightStatus.snapshot());
@@ -292,6 +298,10 @@ function createVesselIntelService(config: AppConfig): IVesselIntelService {
   }
 
   return new MockVesselIntelService();
+}
+
+function createSanctionsScreeningService(config: AppConfig): ISanctionsScreeningService {
+  return new SanctionsScreeningService(config);
 }
 
 function createAircraftIntelService(config: AppConfig): IAircraftIntelService {

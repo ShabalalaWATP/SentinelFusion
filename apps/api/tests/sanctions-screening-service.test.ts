@@ -1,76 +1,80 @@
 import { describe, expect, it } from "vitest";
-import type { Aircraft } from "@aisstream/shared";
-import { FiledRouteContextService } from "../src/context/filed-route-context-service";
+import type { Vessel } from "@aisstream/shared";
+import { SanctionsScreeningService } from "../src/context/sanctions-screening-service";
 import type { AppConfig } from "../src/config/environment";
 
 const generatedAt = "2026-06-21T12:00:00.000Z";
-const aircraft: Aircraft = {
-  id: "icao24-407abc",
-  icao24: "407abc",
-  callsign: "RFR7182",
-  classification: "military",
-  emergency: false,
-  latitude: 50.82,
-  longitude: -1.21,
+const vessel: Vessel = {
+  id: "mmsi-232001234",
+  mmsi: "232001234",
+  name: "NORTHERN LIGHT",
+  callSign: "ABCD",
+  shipType: "Cargo",
+  longitude: 1.2,
+  latitude: 51.7,
+  speedOverGround: 12.5,
+  courseOverGround: 86,
+  destination: "Felixstowe",
+  navigationalStatus: "Under way using engine",
+  riskLevel: "low",
   lastUpdated: generatedAt,
-  onGround: false,
-  originAirport: "EGLL",
-  destinationAirport: "EGJJ",
-  originCountry: "United Kingdom",
-  riskLevel: "medium",
-  source: "mock",
-  track: []
+  track: [{ longitude: 1.2, latitude: 51.7, timestamp: generatedAt }]
 };
 
-describe("filed route context service", () => {
-  it("returns not configured by default instead of pretending filed route data exists", async () => {
-    const service = new FiledRouteContextService(config(), () => new Date(generatedAt));
+describe("sanctions screening service", () => {
+  it("returns not configured by default instead of pretending sanctions data exists", async () => {
+    const service = new SanctionsScreeningService(config(), () => new Date(generatedAt));
 
-    const result = await service.getFiledRoute(aircraft);
+    const result = await service.screenVessel(vessel);
 
     expect(result).toMatchObject({
       status: "not_configured",
       mode: "off",
-      provider: "flightaware",
-      aircraft: {
-        aircraftId: aircraft.id,
-        icao24: aircraft.icao24,
-        callsign: aircraft.callsign
+      provider: "opensanctions",
+      subject: {
+        vesselId: vessel.id,
+        mmsi: vessel.mmsi,
+        name: vessel.name
+      },
+      matches: [],
+      summary: {
+        matchCount: 0,
+        reviewRequiredCount: 0
       }
     });
-    expect(result.route).toBeUndefined();
-    expect(result.limitations[0]).toContain("licensed FlightAware");
+    expect(result.limitations[1]).toContain("false positives");
   });
 
-  it("returns deterministic mock route data only when mock mode is explicit", async () => {
-    const service = new FiledRouteContextService(
-      config({ flightRouteContextMode: "mock", flightRouteContextMaxWaypoints: 2 }),
+  it("returns deterministic mock review leads only when mock mode is explicit", async () => {
+    const service = new SanctionsScreeningService(
+      config({ sanctionsContextMode: "mock", sanctionsContextMaxResults: 1 }),
       () => new Date(generatedAt)
     );
 
-    const result = await service.getFiledRoute(aircraft);
+    const result = await service.screenVessel(vessel);
 
     expect(result.status).toBe("ok");
     expect(result.mode).toBe("mock");
     expect(result.provider).toBe("mock");
-    expect(result.route?.originAirport).toBe("EGLL");
-    expect(result.route?.destinationAirport).toBe("EGJJ");
-    expect(result.route?.waypoints).toHaveLength(2);
-    expect(result.limitations[0]).toContain("Mock filed routes");
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0]).toMatchObject({
+      reviewStatus: "possible_match",
+      risk: "medium"
+    });
+    expect(result.limitations[1]).toContain("false positives");
   });
 
-  it("returns not configured in live mode until a licensed adapter is wired", async () => {
-    const service = new FiledRouteContextService(
-      config({ flightRouteContextMode: "live", flightRouteContextProvider: "fr24" }),
+  it("returns not configured in live mode until an adapter is wired", async () => {
+    const service = new SanctionsScreeningService(
+      config({ sanctionsContextMode: "live", sanctionsContextProvider: "custom" }),
       () => new Date(generatedAt)
     );
 
-    const result = await service.getFiledRoute(aircraft);
+    const result = await service.screenVessel(vessel);
 
     expect(result.status).toBe("not_configured");
     expect(result.mode).toBe("live");
-    expect(result.provider).toBe("fr24");
-    expect(result.source.url).toContain("fr24api");
+    expect(result.provider).toBe("custom");
   });
 });
 
@@ -117,9 +121,9 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     flightRouteContextMode: "off",
     flightRouteContextProvider: "flightaware",
     flightRouteContextMaxWaypoints: 60,
-  sanctionsContextMode: "off",
-  sanctionsContextProvider: "opensanctions",
-  sanctionsContextMaxResults: 10,
+    sanctionsContextMode: "off",
+    sanctionsContextProvider: "opensanctions",
+    sanctionsContextMaxResults: 10,
     analysisMode: "mock",
     openaiModel: "gpt-5.4-mini",
     openaiTimeoutMs: 20000,

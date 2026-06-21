@@ -26,12 +26,14 @@ Implemented:
 - Server-side OurAirports airport/runway context for analysed areas and selected aircraft, with fixed open-data CSV URLs, bounded parsing, server-resolved selected-aircraft position lookups, typed `ok`/`not_configured`/`error` states, and collapsible area/aircraft panels.
 - Server-side NOTAM/TFR airspace provider contract for analysed areas, with strict bounds validation, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, and a collapsible area-result panel that does not claim live airspace notices without authorised provider access.
 - Server-side filed-route provider contract for selected aircraft, with server-resolved aircraft lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, and a collapsible aircraft panel that separates filed/planned route data from observed tracks.
+- Server-side sanctions and ownership screening provider contract for selected vessels, with server-resolved vessel lookup, explicit off/mock/live modes, typed `ok`/`not_configured`/`error` states, false-positive warnings, source-link safety, and a collapsible vessel panel that presents matches as review leads.
 - Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
 
 Still planned:
 
 - Credentialed filed-route adapters when licensed FlightAware, Flightradar24, or equivalent provider access is available.
 - Credentialed airspace notice adapters when authorised FAA/SWIM or licensed provider access is available.
+- Credentialed sanctions and ownership adapters when licensed OpenSanctions or custom provider access is available.
 - Server-side provider aggregation for future OSINT providers and persisted domain defaults.
 
 ## Provider Decision
@@ -389,4 +391,4 @@ The flight-tracking expansion is complete only when:
 
 ## Current Next Step
 
-Implement the next OSINT provider slice: sanctions and ownership screening provider contract with confidence warnings and false-positive handling. Domain defaults and mobile layout checks remain as Stage 4.7 polish.
+Implement the next OSINT provider slice: satellite area snapshots with source/date/limitations and a clear not-configured state where provider access is unavailable. Domain defaults and mobile layout checks remain as Stage 4.7 polish.

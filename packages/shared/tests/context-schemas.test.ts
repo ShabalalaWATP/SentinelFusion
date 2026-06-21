@@ -4,7 +4,8 @@ import {
   airportContextResponseSchema,
   filedRouteContextResponseSchema,
   fireContextResponseSchema,
-  marineWeatherResponseSchema
+  marineWeatherResponseSchema,
+  sanctionsScreeningResponseSchema
 } from "../src";
 
 const now = new Date("2026-06-20T12:00:00.000Z").toISOString();
@@ -256,5 +257,49 @@ describe("context schemas", () => {
 
     expect(parsed.route?.originAirport).toBe("EGLL");
     expect(parsed.route?.waypoints).toHaveLength(2);
+  });
+
+  it("validates sanctions screening responses as review leads", () => {
+    const parsed = sanctionsScreeningResponseSchema.parse({
+      status: "ok",
+      mode: "mock",
+      provider: "mock",
+      source: {
+        title: "Mock sanctions screening",
+        url: "https://www.opensanctions.org/docs/api/",
+        attribution: "Mock screening context for local development"
+      },
+      generatedAt: now,
+      cached: false,
+      subject: {
+        vesselId: "mmsi-232001234",
+        mmsi: "232001234",
+        name: "NORTHERN LIGHT",
+        shipType: "Cargo"
+      },
+      matches: [
+        {
+          id: "mock-review-lead",
+          caption: "Northern Light Shipping Ltd",
+          schema: "Company",
+          score: 0.72,
+          risk: "medium",
+          reviewStatus: "possible_match",
+          topics: ["sanction"],
+          datasets: ["mock-watchlist"],
+          sourceUrl: "https://www.opensanctions.org/",
+          explanation: "Mock lead based on a similar vessel name. Human review is required."
+        }
+      ],
+      summary: {
+        matchCount: 1,
+        reviewRequiredCount: 1,
+        highestScore: 0.72
+      },
+      limitations: ["Screening results are triage leads and can be false positives."]
+    });
+
+    expect(parsed.matches[0]?.reviewStatus).toBe("possible_match");
+    expect(parsed.summary.reviewRequiredCount).toBe(1);
   });
 });

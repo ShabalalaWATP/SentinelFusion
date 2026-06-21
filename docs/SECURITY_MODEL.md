@@ -10,6 +10,7 @@
 - OurAirports data: external public-domain airport/runway CSV source used only from the API.
 - Airspace notice providers: future authorised FAA/SWIM, TFR, or licensed NOTAM/restriction feeds used only from the API. No consumer NOTAM or flight-radar pages are scraped.
 - Filed-route providers: future licensed FlightAware AeroAPI, Flightradar24 API, or equivalent planned-route feeds used only from the API. No consumer flight-radar pages are scraped.
+- Sanctions and ownership screening providers: future licensed OpenSanctions or custom screening feeds used only from the API. AIS vessel names, callsigns, and destinations are weak search hints, not verified identity.
 - OpenAI API: external analysis provider used only from the API in live analysis mode.
 
 ## Implemented Controls
@@ -35,7 +36,7 @@
 - AISstream parser accepts only usable, schema-valid vessel updates and records dropped frames.
 - `/stream/status` exposes telemetry without credentials.
 - `/vessels` and `/ws/vessels` expose public normalised AIS telemetry in this POC. The WebSocket `Origin` check is browser-origin hygiene, not an authentication control.
-- `/analysis` validates input with Zod and can be guarded with `ANALYSIS_API_TOKEN`.
+- `/analysis` and API-side enrichment routes validate input with Zod and can be guarded with `ANALYSIS_API_TOKEN`.
 - OpenAI prompts are grounded in server-side repository snapshots and analytics.
 - OpenAI instructions explicitly treat AIS text fields as untrusted telemetry.
 - `/analysis` drops client-supplied vessel and aircraft intel for entities absent from the server snapshot.
@@ -45,6 +46,7 @@
 - `/context/airports` accepts only validated area bounds or numeric point lookups, builds requests to fixed OurAirports CSV URLs, caps provider response bytes while streaming and CSV rows before parsing, and returns typed airport/runway summaries. `/aircraft/:id/airport-context` resolves selected-aircraft coordinates from the server repository instead of trusting browser-supplied aircraft positions.
 - `/context/airspace` accepts only validated area bounds, rejects over-large areas before any provider access, and returns a typed not-configured state by default. Mock notices are available only through explicit API-side configuration and are labelled as mock. The current live mode does not make outbound airspace-notice requests until an authorised provider adapter is added.
 - `/aircraft/:id/filed-route` resolves selected aircraft from the server repository, returns typed provider states, and defaults to not configured until a licensed filed-route provider adapter is added. The browser supplies only an aircraft id, not callsign, route text, provider URLs, or credentials.
+- `/vessels/:id/sanctions-screening` uses the same optional `ANALYSIS_API_TOKEN` guard as enrichment routes, resolves selected vessels from the server repository, returns typed provider states, and defaults to not configured until a licensed sanctions or ownership provider adapter is added. The browser supplies only a vessel id, not vessel identity claims, provider URLs, or credentials. Mock matches require explicit API-side configuration and are labelled as review leads.
 
 ## AISstream Risks
 
@@ -82,3 +84,5 @@ Mitigations implemented for OurAirports: the API uses fixed `airports.csv` and `
 Mitigations implemented for airspace notices: the browser can only submit numeric bounds, selected areas have airspace-specific span and area limits, no provider URL is accepted from the client, the default route returns an explicit not-configured response, mock output requires an explicit API-side mode, and UI text states that live NOTAM/TFR access needs authorised provider configuration. The implementation deliberately avoids scraping consumer NOTAM, TFR, or flight-radar pages.
 
 Mitigations implemented for filed routes: the browser can request a selected aircraft by id only, the API resolves current aircraft identity from server state, no provider URL is accepted from the client, default and unimplemented live modes return explicit not-configured responses, mock output requires an explicit API-side mode, and UI text separates licensed filed/planned route data from observed tracks reconstructed from position updates.
+
+Mitigations implemented for sanctions and ownership screening: the browser can request a selected vessel by id only, the API resolves vessel identity from server state, `ANALYSIS_API_TOKEN` protects screening when configured, unauthorised requests do not invoke the screening service, no provider URL is accepted from the client, default and unimplemented live modes return explicit not-configured responses, mock output requires an explicit API-side mode, match links are restricted to `http` and `https`, and UI text presents matches as review leads with confidence scores and false-positive warnings rather than compliance facts.

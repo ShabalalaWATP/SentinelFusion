@@ -11,6 +11,7 @@ import {
   flightStreamStatusSchema,
   healthResponseSchema,
   marineWeatherResponseSchema,
+  sanctionsScreeningResponseSchema,
   vesselIntelResponseSchema,
   vesselSnapshotResponseSchema,
   type AisStreamStatus,
@@ -25,6 +26,7 @@ import {
   type FlightStreamStatus,
   type HealthResponse,
   type MarineWeatherResponse,
+  type SanctionsScreeningResponse,
   type TrafficAreaBounds,
   type VesselIntelResponse,
   type VesselSnapshotResponse
@@ -43,6 +45,7 @@ export type ApiClient = {
   getFlightStatus(): Promise<FlightStreamStatus>;
   getHealth(): Promise<HealthResponse>;
   getMarineWeather(bounds: TrafficAreaBounds): Promise<MarineWeatherResponse>;
+  getSanctionsScreening(vesselId: string): Promise<SanctionsScreeningResponse>;
   getStreamStatus(): Promise<AisStreamStatus>;
   getVesselIntel(vesselId: string): Promise<VesselIntelResponse>;
   getVessels(): Promise<VesselSnapshotResponse>;
@@ -154,6 +157,10 @@ export function createApiClient(baseUrl: string): ApiClient {
         marineWeatherResponseSchema.parse(value)
       );
     },
+    getSanctionsScreening: (vesselId) =>
+      getJson(`/vessels/${encodeURIComponent(vesselId)}/sanctions-screening`, (value) =>
+        sanctionsScreeningResponseSchema.parse(value)
+      ),
     getStreamStatus: () =>
       getJson("/stream/status", (value) => aisStreamStatusSchema.parse(value)),
     getVesselIntel: (vesselId) =>

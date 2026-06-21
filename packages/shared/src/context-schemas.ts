@@ -273,3 +273,49 @@ export const filedRouteContextResponseSchema = z.object({
   limitations: z.array(z.string().min(1).max(280)).min(1).max(6),
   error: z.string().min(1).max(260).optional()
 });
+
+export const sanctionsScreeningSourceSchema = z.object({
+  title: z.string().min(1).max(120),
+  url: publicHttpUrlSchema,
+  attribution: z.string().min(1).max(180)
+});
+
+export const sanctionsScreeningSubjectSchema = z.object({
+  vesselId: z.string().min(1).max(80),
+  mmsi: z.string().regex(/^\d{9}$/),
+  name: z.string().min(1).max(120),
+  callSign: z.string().min(1).max(32).optional(),
+  shipType: z.string().min(1).max(80),
+  destination: z.string().min(1).max(160).optional()
+});
+
+export const sanctionsScreeningMatchSchema = z.object({
+  id: z.string().min(1).max(120),
+  caption: z.string().min(1).max(180),
+  schema: z.string().min(1).max(80),
+  score: z.number().min(0).max(1),
+  risk: riskLevelSchema,
+  reviewStatus: z.enum(["review_required", "possible_match", "weak_match"]),
+  topics: z.array(z.string().min(1).max(80)).max(12),
+  datasets: z.array(z.string().min(1).max(120)).max(12),
+  sourceUrl: publicHttpUrlSchema.optional(),
+  explanation: z.string().min(1).max(500)
+});
+
+export const sanctionsScreeningResponseSchema = z.object({
+  status: z.enum(["ok", "not_configured", "error"]),
+  mode: z.enum(["off", "mock", "live"]),
+  provider: z.enum(["opensanctions", "custom", "mock"]),
+  source: sanctionsScreeningSourceSchema,
+  generatedAt: z.string().datetime(),
+  cached: z.boolean(),
+  subject: sanctionsScreeningSubjectSchema,
+  matches: z.array(sanctionsScreeningMatchSchema).max(50),
+  summary: z.object({
+    matchCount: z.number().int().nonnegative(),
+    reviewRequiredCount: z.number().int().nonnegative(),
+    highestScore: z.number().min(0).max(1).optional()
+  }),
+  limitations: z.array(z.string().min(1).max(300)).min(1).max(6),
+  error: z.string().min(1).max(260).optional()
+});

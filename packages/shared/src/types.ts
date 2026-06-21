@@ -20,7 +20,8 @@ import type {
   airportContextResponseSchema,
   filedRouteContextResponseSchema,
   fireContextResponseSchema,
-  marineWeatherResponseSchema
+  marineWeatherResponseSchema,
+  sanctionsScreeningResponseSchema
 } from "./context-schemas";
 import type {
   aisRawMessageSchema,
@@ -88,3 +89,4 @@ export type AirportContextResponse = z.infer<typeof airportContextResponseSchema
 export type FiledRouteContextResponse = z.infer<typeof filedRouteContextResponseSchema>;
 export type MarineWeatherResponse = z.infer<typeof marineWeatherResponseSchema>;
 export type FireContextResponse = z.infer<typeof fireContextResponseSchema>;
+export type SanctionsScreeningResponse = z.infer<typeof sanctionsScreeningResponseSchema>;

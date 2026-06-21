@@ -23,6 +23,7 @@ import { TrafficTrackingControls } from "../map/TrafficTrackingControls";
 import { MilitaryIntelPanel } from "../military/MilitaryIntelPanel";
 import { RoutePanel } from "../routes/RoutePanel";
 import { SettingsPanel } from "../settings/SettingsPanel";
+import { SanctionsScreeningPanel } from "./SanctionsScreeningPanel";
 import { VesselBadges } from "./VesselBadges";
 import { VesselIntelPanel } from "./VesselIntelPanel";
 import {
@@ -271,6 +272,7 @@ function VesselSummary({ vessel }: VesselSummaryProps) {
       </div>
 
       <DetailGrid vessel={vessel} />
+      <SanctionsScreeningPanel vessel={vessel} />
       <VesselIntelPanel vessel={vessel} />
     </div>
   );

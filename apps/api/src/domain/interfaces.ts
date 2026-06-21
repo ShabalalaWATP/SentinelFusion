@@ -7,6 +7,7 @@ import type {
   AirportContextResponse,
   FiledRouteContextResponse,
   AircraftMetrics,
+  SanctionsScreeningResponse,
   AircraftStreamEnvelope,
   AnalysisAircraftIntelContext,
   AnalysisRequest,
@@ -209,6 +210,10 @@ export interface IAirspaceContextService {
 
 export interface IFlightRouteContextService {
   getFiledRoute(aircraft: Aircraft): Promise<FiledRouteContextResponse>;
+}
+
+export interface ISanctionsScreeningService {
+  screenVessel(vessel: Vessel): Promise<SanctionsScreeningResponse>;
 }
 
 export interface IMarineWeatherService {

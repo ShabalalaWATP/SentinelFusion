@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  parseBoundingBoxes,
+  parseCsv,
+  parseTrustProxy,
+  unique,
+  type AisBoundingBox,
+  type TrustProxyConfig
+} from "./environment-parsers";
 
 const optionalNonEmptyString = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -22,7 +30,7 @@ const booleanEnv = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
-export type TrustProxyConfig = false | string | string[] | number;
+export type { AisBoundingBox, TrustProxyConfig } from "./environment-parsers";
 
 const flightProviderSchema = z.enum(["mock", "opensky", "adsbexchange", "fr24", "flightaware"]);
 const firmsSourceSchema = z.enum([
@@ -82,6 +90,9 @@ const rawConfigSchema = z.object({
   FLIGHT_ROUTE_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
   FLIGHT_ROUTE_CONTEXT_PROVIDER: z.enum(["flightaware", "fr24", "custom"]).default("flightaware"),
   FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS: z.coerce.number().int().min(1).max(120).default(60),
+  SANCTIONS_CONTEXT_MODE: z.enum(["off", "mock", "live"]).default("off"),
+  SANCTIONS_CONTEXT_PROVIDER: z.enum(["opensanctions", "custom"]).default("opensanctions"),
+  SANCTIONS_CONTEXT_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(10),
   ANALYSIS_MODE: z.enum(["mock", "live"]).default("live"),
   ALLOW_UNAUTHENTICATED_ANALYSIS: booleanEnv.default(false),
   ANALYSIS_API_TOKEN: z.preprocess(
@@ -145,6 +156,9 @@ export type AppConfig = {
   flightRouteContextMode: "off" | "mock" | "live";
   flightRouteContextProvider: "flightaware" | "fr24" | "custom";
   flightRouteContextMaxWaypoints: number;
+  sanctionsContextMode: "off" | "mock" | "live";
+  sanctionsContextProvider: "opensanctions" | "custom";
+  sanctionsContextMaxResults: number;
   analysisMode: "mock" | "live";
   analysisApiToken?: string;
   openaiModel: string;
@@ -155,8 +169,6 @@ export type AppConfig = {
   aisstreamApiKey?: string;
   openaiApiKey?: string;
 };
-
-export type AisBoundingBox = [[number, number], [number, number]];
 
 export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = rawConfigSchema.parse(source);
@@ -244,6 +256,9 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     flightRouteContextMode: parsed.FLIGHT_ROUTE_CONTEXT_MODE,
     flightRouteContextProvider: parsed.FLIGHT_ROUTE_CONTEXT_PROVIDER,
     flightRouteContextMaxWaypoints: parsed.FLIGHT_ROUTE_CONTEXT_MAX_WAYPOINTS,
+    sanctionsContextMode: parsed.SANCTIONS_CONTEXT_MODE,
+    sanctionsContextProvider: parsed.SANCTIONS_CONTEXT_PROVIDER,
+    sanctionsContextMaxResults: parsed.SANCTIONS_CONTEXT_MAX_RESULTS,
     analysisMode: parsed.ANALYSIS_MODE,
     openaiModel: parsed.OPENAI_MODEL,
     openaiTimeoutMs: parsed.OPENAI_TIMEOUT_MS,
@@ -289,62 +304,4 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
   }
 
   return config;
-}
-
-function parseCsv(value: string | undefined): string[] {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function unique(values: string[]): string[] {
-  return [...new Set(values)];
-}
-
-function parseTrustProxy(value: string): TrustProxyConfig {
-  const trimmed = value.trim();
-  const normalised = trimmed.toLowerCase();
-
-  if (["", "0", "false", "no", "off"].includes(normalised)) {
-    return false;
-  }
-
-  if (["true", "yes", "on"].includes(normalised)) {
-    throw new Error(
-      "TRUST_PROXY=true is unsafe because it trusts spoofable forwarded headers. Use false, a hop count such as 1, or trusted proxy addresses/CIDRs."
-    );
-  }
-
-  if (/^\d+$/.test(trimmed)) {
-    const hops = Number(trimmed);
-    if (hops > 0) {
-      return hops;
-    }
-  }
-
-  const entries = trimmed
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  if (entries.length === 0) {
-    return false;
-  }
-
-  return entries.length === 1 ? entries[0]! : entries;
-}
-
-function parseBoundingBoxes(value: string): AisBoundingBox[] {
-  const parsed = z
-    .array(
-      z.tuple([
-        z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]),
-        z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)])
-      ])
-    )
-    .min(1)
-    .parse(JSON.parse(value));
-
-  return parsed;
 }
