@@ -3,6 +3,11 @@ import type { MapDomainFilter } from "../../stores/mapStore";
 import { useAircraftStore } from "../../stores/aircraftStore";
 import { useMapStore } from "../../stores/mapStore";
 import { useVesselStore } from "../../stores/vesselStore";
+import {
+  defaultFeedConfidenceSettings,
+  describeFeedHealth,
+  type FeedStreamStatus
+} from "../../traffic/feedConfidence";
 import { MetricTile } from "./MetricTile";
 
 export function TopMetricsBar() {
@@ -16,6 +21,16 @@ export function TopMetricsBar() {
   const aircraftLastError = useAircraftStore((state) => state.lastError);
   const domainFilter = useMapStore((state) => state.domainFilter);
   const setDomainFilter = useMapStore((state) => state.setDomainFilter);
+  const seaHealth = providerDisplayStatus({
+    connectionStatus,
+    lastError,
+    streamStatus
+  });
+  const airHealth = providerDisplayStatus({
+    connectionStatus: aircraftConnectionStatus,
+    lastError: aircraftLastError,
+    streamStatus: aircraftStreamStatus
+  });
 
   return (
     <header className="flex flex-col gap-2 border-b border-slate-500/[0.15] bg-ocean-900/[0.92] px-3 py-2 lg:min-h-20 lg:flex-row lg:items-center lg:justify-between lg:px-5 lg:py-3">
@@ -25,15 +40,15 @@ export function TopMetricsBar() {
             Sentinel Fusion
           </h1>
           <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-            <span className={`h-2 w-2 rounded-full ${statusClass(connectionStatus)}`} />
-            <span>{feedLabel("Sea", streamStatus?.mode, undefined, connectionStatus)}</span>
-            <span className={`h-2 w-2 rounded-full ${statusClass(aircraftConnectionStatus)}`} />
+            <span className={`h-2 w-2 rounded-full ${statusClass(seaHealth)}`} />
+            <span>{feedLabel("Sea", streamStatus?.mode, undefined, seaHealth)}</span>
+            <span className={`h-2 w-2 rounded-full ${statusClass(airHealth)}`} />
             <span>
               {feedLabel(
                 "Air",
                 aircraftStreamStatus?.mode,
                 aircraftStreamStatus?.provider,
-                aircraftConnectionStatus
+                airHealth
               )}
             </span>
           </div>
@@ -141,6 +156,37 @@ function feedLabel(
   return `${label} ${source} ${connectionStatus}`;
 }
 
+function providerDisplayStatus({
+  connectionStatus,
+  lastError,
+  streamStatus
+}: {
+  connectionStatus: string;
+  lastError: string | null;
+  streamStatus: FeedStreamStatus | null;
+}): string {
+  if (connectionStatus !== "open") {
+    return connectionStatus;
+  }
+
+  const health = describeFeedHealth({
+    connectionStatus,
+    lastError,
+    maxMessageAgeMinutes: defaultFeedConfidenceSettings.maxContactAgeMinutes,
+    streamStatus
+  });
+
+  if (health.healthy) {
+    return "open";
+  }
+
+  if (lastError) {
+    return "degraded";
+  }
+
+  return "waiting";
+}
+
 function formatNumber(value: number | undefined): string {
   return new Intl.NumberFormat("en-GB").format(value ?? 0);
 }
@@ -158,7 +204,7 @@ function statusClass(status: string): string {
     return "bg-teal-300 shadow-[0_0_16px_rgb(45_212_191_/_0.8)]";
   }
 
-  if (status === "error") {
+  if (status === "error" || status === "degraded") {
     return "bg-red-400";
   }
 

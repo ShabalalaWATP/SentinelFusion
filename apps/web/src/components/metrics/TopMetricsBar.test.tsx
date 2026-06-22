@@ -68,12 +68,13 @@ const flightStatus: FlightStreamStatus = {
 describe("TopMetricsBar", () => {
   beforeEach(() => {
     cleanup();
+    const freshVesselStatus = { ...vesselStatus, lastMessageAt: new Date().toISOString() };
     useMapStore.setState({ domainFilter: "all" });
     useVesselStore.setState({
       vessels: {},
       selectedVesselId: null,
       metrics: vesselMetrics,
-      streamStatus: vesselStatus,
+      streamStatus: freshVesselStatus,
       connectionStatus: "open",
       lastError: null
     });
@@ -91,7 +92,7 @@ describe("TopMetricsBar", () => {
     render(<TopMetricsBar />);
 
     expect(screen.getByText("Sea live open")).toBeTruthy();
-    expect(screen.getByText("Air live opensky open")).toBeTruthy();
+    expect(screen.getByText("Air live opensky degraded")).toBeTruthy();
     expect(
       screen.getByText("Air: OpenSky rate limit exhausted; retrying after 120 seconds.")
     ).toBeTruthy();
