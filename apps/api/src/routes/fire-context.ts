@@ -3,6 +3,7 @@ import { z } from "zod";
 import { analysisAreaBoundsSchema } from "@aisstream/shared";
 import { fireContextAreaLimitError } from "../context/fire-context-limits";
 import type { IFireContextService } from "../domain/interfaces";
+import { isAuthorised } from "./auth";
 
 const querySchema = z.object({
   south: z.coerce.number(),
@@ -12,6 +13,8 @@ const querySchema = z.object({
 });
 
 type FireContextRouteDependencies = {
+  analysisApiToken?: string;
+  requiresAnalysisToken?: boolean;
   service: IFireContextService;
 };
 
@@ -20,6 +23,13 @@ export async function registerFireContextRoute(
   dependencies: FireContextRouteDependencies
 ): Promise<void> {
   app.get("/context/fire-anomalies", async (request, reply) => {
+    if (
+      dependencies.requiresAnalysisToken &&
+      (!dependencies.analysisApiToken || !isAuthorised(request, dependencies.analysisApiToken))
+    ) {
+      return reply.code(401).send({ error: "Analysis token is required." });
+    }
+
     const query = querySchema.safeParse(request.query);
     if (!query.success) {
       return reply.code(400).send({ error: "Fire context bounds are invalid." });

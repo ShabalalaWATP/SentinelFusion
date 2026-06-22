@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
+import type { FireContextResponse, TrafficAreaBounds } from "@aisstream/shared";
 import { createApp } from "../src/app";
 import type { AppConfig } from "../src/config/environment";
 import type { IFireContextService } from "../src/domain/interfaces";
@@ -158,4 +159,90 @@ describe("fire context route", () => {
     expect(response.statusCode).toBe(400);
     expect(response.json().error).toContain("too tall");
   });
+
+  it("requires the analysis token before spending a configured FIRMS key", async () => {
+    const getAreaFires = vi.fn(async () => {
+      throw new Error("service should not be called");
+    });
+    const fireContextService: IFireContextService = {
+      getAreaFires
+    };
+    app = await createApp(
+      {
+        ...config,
+        analysisApiToken: "0123456789abcdef",
+        firmsMapKey: "test-firms-key",
+        firmsMode: "live"
+      },
+      {
+        fireContextService,
+        startStreams: false
+      }
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/context/fire-anomalies?south=50.68&west=-1.28&north=50.9&east=-0.86"
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(getAreaFires).not.toHaveBeenCalled();
+  });
+
+  it("accepts a bearer analysis token for configured FIRMS context", async () => {
+    const getAreaFires = vi.fn(async (bounds) => mockFireResponse(bounds));
+    const fireContextService: IFireContextService = {
+      getAreaFires
+    };
+    app = await createApp(
+      {
+        ...config,
+        analysisApiToken: "0123456789abcdef",
+        firmsMapKey: "test-firms-key",
+        firmsMode: "live"
+      },
+      {
+        fireContextService,
+        startStreams: false
+      }
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/context/fire-anomalies?south=50.68&west=-1.28&north=50.9&east=-0.86",
+      headers: { authorization: "Bearer 0123456789abcdef" }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(getAreaFires).toHaveBeenCalledOnce();
+  });
 });
+
+function mockFireResponse(bounds: TrafficAreaBounds): FireContextResponse {
+  return {
+    status: "ok",
+    mode: "mock",
+    source: {
+      title: "NASA FIRMS Active Fire",
+      url: "https://firms.modaps.eosdis.nasa.gov/api/area/",
+      attribution: "Active fire data by NASA FIRMS, LANCE, EOSDIS"
+    },
+    generatedAt: timestamp,
+    cached: false,
+    area: bounds,
+    sourceDataset: "VIIRS_SNPP_NRT",
+    dayRange: 1,
+    detections: [],
+    summary: {
+      count: 0,
+      highConfidenceCount: 0,
+      dayCount: 0,
+      nightCount: 0
+    },
+    risk: {
+      level: "low",
+      reasons: ["No active fire detections were returned for this area."]
+    },
+    limitations: ["Test service."]
+  };
+}

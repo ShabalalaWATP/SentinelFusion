@@ -144,8 +144,10 @@ export function createApiClient(baseUrl: string): ApiClient {
         east: String(bounds.east)
       });
 
-      return getJson(`/context/fire-anomalies?${params.toString()}`, (value) =>
-        fireContextResponseSchema.parse(value)
+      return getJson(
+        `/context/fire-anomalies?${params.toString()}`,
+        (value) => fireContextResponseSchema.parse(value),
+        { auth: true }
       );
     },
     getFlightStatus: () =>

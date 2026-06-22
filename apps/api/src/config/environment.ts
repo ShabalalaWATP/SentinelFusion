@@ -238,6 +238,10 @@ export function parseAppConfig(source: NodeJS.ProcessEnv = process.env): AppConf
     );
   }
 
+  if (parsed.FIRMS_MODE === "live" && parsed.FIRMS_MAP_KEY && !parsed.ANALYSIS_API_TOKEN) {
+    throw new Error("ANALYSIS_API_TOKEN is required when FIRMS_MODE=live uses FIRMS_MAP_KEY.");
+  }
+
   const config: AppConfig = {
     nodeEnv: parsed.NODE_ENV,
     host: parsed.HOST,

@@ -217,6 +217,31 @@ describe("AISstream parsing", () => {
     });
   });
 
+  it("requires an analysis token when live FIRMS context has a provider key", () => {
+    expect(() =>
+      parseAppConfig({
+        AIS_MODE: "mock",
+        ANALYSIS_MODE: "mock",
+        FIRMS_MODE: "live",
+        FIRMS_MAP_KEY: "test-firms-key"
+      } as NodeJS.ProcessEnv)
+    ).toThrow("ANALYSIS_API_TOKEN is required when FIRMS_MODE=live");
+
+    expect(
+      parseAppConfig({
+        AIS_MODE: "mock",
+        ANALYSIS_MODE: "mock",
+        FIRMS_MODE: "live",
+        FIRMS_MAP_KEY: "test-firms-key",
+        ANALYSIS_API_TOKEN: "0123456789abcdef"
+      } as NodeJS.ProcessEnv)
+    ).toMatchObject({
+      analysisApiToken: "0123456789abcdef",
+      firmsMapKey: "test-firms-key",
+      firmsMode: "live"
+    });
+  });
+
   it("rejects blanket trust for spoofable proxy headers", () => {
     expect(() =>
       parseAppConfig({

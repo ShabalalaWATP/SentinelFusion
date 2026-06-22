@@ -134,7 +134,9 @@ export async function createApp(
     service: marineWeatherService
   });
   await registerFireContextRoute(app, {
-    service: fireContextService
+    service: fireContextService,
+    requiresAnalysisToken: config.firmsMode === "live" && Boolean(config.firmsMapKey),
+    ...(config.analysisApiToken ? { analysisApiToken: config.analysisApiToken } : {})
   });
   await registerConflictContextRoute(app, {
     service: conflictContextService,

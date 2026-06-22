@@ -26,7 +26,9 @@ describe("apiClient", () => {
     const fetchMock = vi.fn(async (url: string) => {
       const body = url.includes("/context/conflict-events")
         ? conflictResponse()
-        : { status: "ok", mode: "live", timestamp: new Date().toISOString() };
+        : url.includes("/context/fire-anomalies")
+          ? fireContextResponse()
+          : healthResponse();
 
       return {
         ok: true,
@@ -39,6 +41,7 @@ describe("apiClient", () => {
     const client = createApiClient("http://localhost:4000");
 
     await client.getConflictContext(bounds);
+    await client.getFireContext(bounds);
     await client.getHealth();
 
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -53,6 +56,16 @@ describe("apiClient", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
+      expect.stringContaining("/context/fire-anomalies?"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-token",
+          accept: "application/json"
+        })
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
       "http://localhost:4000/health",
       expect.objectContaining({
         headers: expect.not.objectContaining({
