@@ -2,7 +2,7 @@
 
 ## Product Goal
 
-Create a modern maritime intelligence dashboard that receives AIS data server-side, visualises vessels on a React map dashboard, and supports natural-language analysis through a backend OpenAI integration.
+Create a modern maritime and aviation intelligence dashboard that receives AIS and aircraft data server-side, visualises vessels and aircraft on a React map dashboard, supports natural-language analysis through a backend OpenAI integration, and enriches selected areas with live OSINT context.
 
 ## Stage 0: Foundation
 
@@ -53,13 +53,32 @@ Status: implemented.
 - Add tests for validation, authorisation hooks, rate limiting, and deterministic fallback behaviour.
 - Wire the frontend vessel drawer to `/analysis` with loading, success, and error states.
 
+## Stage 4: Sea/Air Operations And OSINT Context
+
+Status: implemented through the current live-tracking and OSINT expansion work.
+
+- Add shared aircraft contracts, live aircraft provider adapters, `/aircraft`, `/flight/status`, and `/ws/aircraft`.
+- Render aircraft on the map with selected-aircraft highlighting, observed tracks, aircraft details, and aircraft search.
+- Add aircraft web-intel enrichment and include cached aircraft intel in analysis context.
+- Add `All`, `Ships`, and `Aircraft` domain filtering across map, lists, routes, alerts, and analysis.
+- Add aircraft operations filters for military, government, commercial, emergency, airborne state, altitude, speed, and search text.
+- Clarify route mode as observed track history rebuilt from received AIS and flight positions.
+- Add natural-language area analysis for named areas, drawn map boxes, selected areas, vessels, aircraft, and whole visible domains.
+- Add operational area tools, area-only mode, natural watch rules, area anomaly monitors, mission routines, and area comparison.
+- Add alert presets for high-risk vessels, classified contacts, emergency aircraft, watched areas, anomalies, provider health, and stale contacts.
+- Add combined sea/air military intel.
+- Add provider-backed OSINT context for marine weather, NASA FIRMS active fires, OurAirports airports/runways, NASA GIBS satellite snapshots, and ACLED conflict/protest events.
+- Remove unpaid provider-contract slices for airspace notices, filed flight routes, and vessel sanctions/ownership screening.
+
 ## Success Criteria For Current POC
 
 - The default app starts in live AISstream and live OpenAI analysis modes.
 - Mock and replay modes remain available for explicit offline development.
-- The web app receives synthetic vessel updates from the backend WebSocket.
+- The web app receives live or explicitly mocked vessel and aircraft updates from backend WebSockets.
 - Map controls update visual style and projection state.
-- Selecting a vessel opens and updates the details drawer.
+- Selecting a vessel or aircraft opens and updates the details drawer, highlights the selected contact, and can track it on the map.
+- Drawn and saved operational areas can be analysed by AI and enriched with OSINT context.
+- Protected provider-backed features keep all provider credentials server-side.
 - Type checking, linting, tests, and builds pass.
 - Default startup requires `AISSTREAM_API_KEY`.
 - Default startup requires `OPENAI_API_KEY`.

@@ -5,7 +5,7 @@ These instructions override the global defaults for this repository where they a
 ## Project Scope
 
 - This proof of concept is the AIS Intelligence Dashboard.
-- Stages 0 to 3 are implemented.
+- Stages 0 to 4.7 are implemented through the current live sea/air, OSINT context, alerting, route clarity, and security-hardening work. Use `docs/MASTER_IMPLEMENTATION_PLAN.md` for current implementation status.
 - The API defaults to live AISstream ingestion and live OpenAI analysis.
 - Keep mock and replay modes working as explicit offline development overrides.
 - Keep AISstream consumption server-side. Never expose `AISSTREAM_API_KEY` to browser code, Vite env, logs, screenshots, or documentation examples with real values.

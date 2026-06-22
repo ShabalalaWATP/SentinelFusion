@@ -2,7 +2,7 @@
 
 ## Objective
 
-Extend Sentinel Fusion from an AIS-only maritime intelligence dashboard into a combined maritime and aviation live-tracking dashboard. The user should be able to see ships and aircraft on the same map, hide or isolate either domain, inspect aircraft with the same confidence and depth as vessels, identify military aircraft automatically where the data supports it, run AI and web intelligence workflows, and analyse drawn or named areas without the interface becoming visually noisy.
+Maintain Sentinel Fusion as a combined maritime and aviation live-tracking dashboard. The user should be able to see ships and aircraft on the same map, hide or isolate either domain, inspect aircraft with the same confidence and depth as vessels, identify military aircraft automatically where the data supports it, run AI and web intelligence workflows, and analyse drawn or named areas without the interface becoming visually noisy.
 
 ## Implementation Status
 
@@ -27,7 +27,7 @@ Implemented:
 - Server-side NASA GIBS satellite snapshot context for analysed areas, with strict bounds validation, fixed-host WMS URL construction, typed `ok`/`not_configured`/`error` states, and a collapsible area panel with image, source, date, layer, and limitations.
 - Server-side ACLED conflict/protest context for analysed areas, with API-only credentials, OAuth token support, strict bounds validation, capped provider responses, typed `ok`/`not_configured`/`error` states, a collapsible area panel, and a toggleable conflict-events map overlay.
 - Paid provider-contract slices for airspace notices, filed flight routes, and sanctions/ownership screening were removed on 2026-06-21 because this project will not pay for those providers.
-- Docker Compose and env examples for flight settings without exposing provider secrets to browser code.
+- Docker Compose and env examples for flight and OSINT provider settings without exposing provider secrets to browser code.
 
 Still planned:
 

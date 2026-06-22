@@ -1,5 +1,11 @@
 # Development Story
 
+## 2026-06-22
+
+- Reworked `README.md` into an operator-facing guide that documents what Sentinel Fusion can do, how to set up local env files, how to run with pnpm or Docker Compose, where provider keys belong, how protected API tokens work, how to use each dashboard panel, and which supporting docs to read next.
+- Updated active documentation that still reflected older stage status. `AGENTS.md`, `docs/AIS_POC_PLAN.md`, `docs/ARCHITECTURE.md`, and `docs/MASTER_IMPLEMENTATION_PLAN.md` now reflect the current sea/air tracking, OSINT context, alerting, observed-track, and security posture.
+- Synced the root `.env.example` and `docker-compose.yml` with the current provider set so Compose users can configure flight polling, marine weather, FIRMS, OurAirports, NASA GIBS, and ACLED settings through the documented root `.env` file.
+
 ## 2026-06-20
 
 - Added a project-level agentic upgrade framework so future broad product-improvement work can be coordinated by an Orchestrator Agent with research, API, engineering, coding, quality, architecture, UX, security, documentation, and goal-loop roles.

@@ -62,9 +62,9 @@ Users can understand what the route control does: it shows movement reconstructe
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | Improve route/track clarity before adding another OSINT feed. | Orchestrator, implementation plan | 8 | 3 | 3 | 8 | Adopted |
 | Add shared aircraft route cap with selected-aircraft preservation. | Code Quality and Cyber Security Agents | 8 | 3 | 2 | 9 | Adopted |
-| Add live weather and ocean risk layer. | Research Agent | 9 | 4 | 6 | 7 | Backlog |
-| Add NASA FIRMS active fire layer. | Research Agent | 8 | 5 | 6 | 7 | Backlog, needs server-side key |
-| Add source freshness and provider confidence controls. | Research and architecture agents | 8 | 3 | 5 | 8 | Backlog |
+| Add live weather and ocean risk layer. | Research Agent | 9 | 4 | 6 | 7 | Implemented by later OSINT loop |
+| Add NASA FIRMS active fire layer. | Research Agent | 8 | 5 | 6 | 7 | Implemented by later OSINT loop |
+| Add source freshness and provider confidence controls. | Research and architecture agents | 8 | 3 | 5 | 8 | Implemented by later OSINT loop |
 
 ## Verification Gates
 
@@ -90,7 +90,7 @@ Users can understand what the route control does: it shows movement reconstructe
 
 - The route panel still shows observed historical tracks only. Filed route enrichment remains future work and should use licensed provider data only.
 - Current live aircraft feed may still be rate-limited by OpenSky, which can reduce flight track coverage until the provider recovers.
-- Production build still emits the existing Vite large-chunk warning. This is not a functional failure, but code splitting remains a future performance task.
+- The earlier Vite large-chunk warning was reduced by later code splitting. The MapLibre chunk remains the largest production asset and should stay under observation during future map work.
 
 ## Stop Condition
 
@@ -98,9 +98,9 @@ Complete. Required checks pass, browser verification confirms the route panel an
 
 ## Next Ambitious Goals
 
-- Add source freshness and provider confidence controls for sea and air contacts.
-- Add live weather and marine conditions for drawn/named areas.
-- Add NASA FIRMS active fire and thermal anomaly context once a server-side `FIRMS_MAP_KEY` is configured.
+- Continue improving provider reliability with snapshot resync after WebSocket reconnects.
+- Add a server-owned intel cache so AI/web research context does not rely on browser-submitted cached intel.
+- Add persistent domain defaults and mobile layout polish.
 
 ## Continuous Improvement Backlog
 
@@ -108,6 +108,6 @@ Complete. Required checks pass, browser verification confirms the route panel an
 | --- | --- | ---: | ---: | ---: | --- |
 | WebSocket reconnect with snapshot resync. | Architecture Agent | 9 | 4 | 5 | Backlog |
 | Stale-contact pruning or tombstones in browser state. | Architecture Agent | 9 | 5 | 6 | Backlog |
-| Source/stale-data filters and alert presets. | Implementation plan | 8 | 3 | 5 | Backlog |
-| Live weather and marine OSINT layer. | Research Agent | 9 | 4 | 6 | Backlog |
-| NASA FIRMS fire/thermal anomaly OSINT layer. | Research Agent | 8 | 5 | 6 | Backlog |
+| Source/stale-data filters and alert presets. | Implementation plan | 8 | 3 | 5 | Implemented |
+| Live weather and marine OSINT layer. | Research Agent | 9 | 4 | 6 | Implemented |
+| NASA FIRMS fire/thermal anomaly OSINT layer. | Research Agent | 8 | 5 | 6 | Implemented |

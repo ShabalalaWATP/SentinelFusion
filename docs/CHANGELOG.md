@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Reworked `README.md` into a full setup and user guide covering features, provider keys, local and Docker startup, protected tokens, offline modes, dashboard usage, security notes, and supporting docs.
+- Updated active project documentation to reflect the current sea/air, OSINT context, alerting, route clarity, and security-hardening scope instead of older stage status.
+- Expanded Docker Compose environment pass-through and the root `.env.example` so Compose runs can configure the same flight and OSINT providers as local API runs.
 - Added the Sentinel Fusion agentic upgrade framework under `docs/agents`.
 - Added Orchestrator Agent activation guidance to the project `AGENTS.md`.
 - Added starter development story and change log documents for the Documentation Agent to maintain.
